@@ -1,0 +1,473 @@
+:root{
+    --white: #fff;
+    --green: #1ed760;
+    --black: #000;
+}
+
+body{
+    background-color: var(--white);
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+a{
+    text-decoration: none;
+}
+
+.hidden{
+    display: none;
+}
+
+header nav{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 25px;
+}
+header nav div{
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.adminLogin a{
+    background-color: var(--black);
+    color: var(--white);
+    padding: 15px 20px;
+    font-weight: 600;
+    transition: all ease 0.5s;
+}
+.salesLogin a{
+    background-color: var(--green);
+    color: var(--black);
+    padding: 15px 20px;
+    font-weight: 600;
+    transition: all ease 0.5s;
+} 
+.adminLogin a:hover{
+    transform: scale(1.1);
+}
+.salesLogin a:hover{
+    transform: scale(1.1);
+}
+header nav .links a{
+    font-weight: 600;
+    font-size: large;
+    color: var(--black);
+    border-bottom: var(--green) 2px solid;
+    padding: 10px 10px;
+    transition: all ease 0.5s;
+} 
+header nav .links a:hover{
+    color: var(--green);
+    border-bottom: var(--black) 2px solid;
+}
+header nav .welcome{
+    font-weight: 600;
+}
+header nav .welcome a{
+    padding: 15px 20px;
+    font-weight: 600;
+    color: var(--black);
+    background-color: red;
+}
+
+/*********************** Index Page ********************************/
+main.indexMain{
+    max-width: 700px;
+    margin: auto;
+    padding-top: 30px;
+    margin-bottom: 200px;
+}
+main.indexMain h1{
+    font-size: 40px;
+}
+main.indexMain p{
+    font-size: 20px;
+}
+main.indexMain .buttons{
+    display: flex;
+    margin-top: 40px;
+    gap: 20px;
+}
+main.indexMain .cards{
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 50px;
+}
+main.indexMain .cards .card{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200px;
+    height: 200px;
+    padding: 20px 10px;
+    background-color: var(--green);
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+}
+main.indexMain .cards .card .image{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 30px;
+    border-radius: 50%;
+    background-color: var(--black);
+    color: var(--white);
+    font-size: 60px;
+}
+main.indexMain .cards .card .card-title a{
+    padding: 5px;
+    border-bottom: var(--black) 2px solid;
+    color: var(--white);
+    transition: all ease 0.5s;
+}
+main.indexMain .cards .card .card-title a:hover{
+    border-bottom: var(--white) 2px solid;
+    color: var(--black);
+}
+footer{
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding: 20px 0;
+    text-align: center;
+    background-color: var(--black);
+    color: var(--white);
+}
+footer .links{
+    padding-bottom: 20px;
+}
+footer a{
+    color: var(--white);
+    font-weight: 600;
+    padding: 10px 15px;
+    border-bottom: var(--white) 2px solid;
+    transition: all ease 0.5s;
+}
+footer a:hover{
+    border-bottom: var(--green) 2px solid;
+}
+
+/*********************** Sales Pages ******************************/
+.salesMain{
+    padding: 30px 0;
+}
+.salesMain .searchFilters form{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    padding-left: 30px;
+    background-color: var(--green);
+}
+.salesMain .searchFilters form input{
+    padding: 10px 5px;
+    border: none;
+}
+.salesMain .searchFilters form button{
+    padding: 10px;
+    color: var(--white);
+    font-weight: 600;
+    background-color: var(--black);
+    border: none;
+}
+.salesMain .previousSales{
+    margin: 30px 0 30px 10px;
+}
+.salesMain .previousSales a{
+    background-color: var(--black);
+    color: var(--white);
+    padding: 15px 20px;
+    font-weight: 600;
+    transition: all ease 0.5s;
+}
+
+.salesMain .tableSection{
+    padding: 20px 10px 0;
+}
+.salesMain .tableSection table{
+    width: 100%;
+}
+.salesMain .itemTable th{
+    background-color: var(--black);
+    color: var(--white);
+    padding: 15px;
+}
+.salesMain .itemTable td{
+    border: var(--black) 1px solid;
+    padding: 5px;
+}
+.salesMain .itemTable tr td:nth-child(3){
+    display: flex;
+    justify-content: center;
+}
+.salesMain .itemTable tr td:nth-child(5){
+    display: flex;
+    justify-content: center;
+}
+.salesMain .itemTable tr td:nth-child(3) input{
+    width: 50px;
+    font-size: larger;
+}
+.salesMain .itemTable .itemName{
+    width: 50%;
+}
+.salesMain .itemTable .category{
+    width: 25%;
+}
+.salesMain .itemTable .price{
+    width: 15%;
+}
+.salesMain .itemTable tr form button{
+    background-color: red;
+    border: none;
+    font-size: 15px;
+    padding: 5px 15px;
+}
+.salesMain .buttons{
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 25px;
+}
+.salesMain .buttons a{
+    padding: 15px 20px;
+    font-weight: 600;
+    transition: all ease 0.5s;
+}
+.salesMain .buttons .sales a:nth-child(1){
+    background-color: var(--green);
+    color: var(--black);
+    margin-right: 20px;
+}
+.salesMain .buttons .sales a:nth-child(2){
+    background-color: var(--black);
+    color: var(--white);
+}
+.salesMain .buttons .clear a{
+    background-color: red;
+    color: var(--black);
+}
+
+/********************** login **********************/
+.mainLogin{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: calc(100dvh - 70px);
+}
+.mainLogin .container{
+    width: 100%;
+    max-width: 700px;
+}
+.mainLogin .container .heading span{
+    border-bottom: var(--green) 2px solid;
+    padding: 5px 0;
+}
+.mainLogin .form{
+    width: 100%;
+    padding: 30px 20px;
+    background-color: var(--black);
+}
+.mainLogin .container form{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+.mainLogin .container form input{
+    padding: 15px;
+    border: none;
+    font-size: 15px;
+}
+.mainLogin .container form button{
+    font-size: 20px;
+    font-weight: 600;
+    padding: 15px;
+    border: none;
+    background-color: var(--green);
+    cursor: pointer;
+    transition: all ease 0.3s;
+}
+.mainLogin .container form button:hover{
+    border: var(--green) 2px solid;
+    background-color: var(--black);
+    color: var(--white);
+    padding: 13px;
+}
+
+/***************************** Dashboard Styles ************************/
+.mainDashboard .sidebar{
+    position: fixed;
+    top: 0;
+    /* display: none; */
+}
+.mainDashboard .sidebar input{
+    width: 35px;
+    height: 35px;
+    position: absolute;
+    top: 35px;
+    left: 25px;
+    opacity: 0;
+    z-index: 2;
+    cursor: pointer;
+}
+.hamburger{
+    width: 35px;
+    height: 35px;
+    position: absolute;
+    background-color: var(--green);
+    top: 35px;
+    left: 25px;
+    cursor: pointer;
+    z-index: 1;
+    display: none;
+}
+.hamburger .common{
+    background-color: black;
+    width: 25px;
+    height: 3px;
+    position: absolute;
+    transition: 0.5s ease;
+    border-radius: 3px;
+}
+.hamburger .top-ham{
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.hamburger .middle-ham{
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.hamburger .bottom-ham{
+    top: 70%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.mainDashboard .sidebar input:checked + .hamburger .top-ham{
+    top: 15px;
+    left: 5px;
+    transform: rotate(45deg);
+}
+.mainDashboard .sidebar input:checked + .hamburger .bottom-ham{
+    top: 15px;
+    left: 5px;
+    transform: rotate(-45deg);
+}
+.mainDashboard .sidebar input:checked + .hamburger .middle-ham{
+    transform: translateX(30px);
+    opacity: 0;
+}
+.mainDashboard .sidebar .menubar{
+    background-color: var(--black);
+    width: 350px;
+    height: 100vh;
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100dvh;
+}
+.mainDashboard .sidebar ul{
+    display: block;
+    list-style-type: none;
+    padding-inline-start: 0;
+}
+.mainDashboard .sidebar li{
+    padding: 0 10px;
+}
+.mainDashboard .sidebar li a, .mainDashboard .sidebar li .dash-form-btn{
+    display: flex;
+    align-items: center;
+    padding: 20px 10px;
+    list-style: none;
+    font-style: normal;
+    text-decoration: none;
+    font-size: 16px;
+    color: var(--white);
+    transition: all 0.3s ease;
+} 
+.mainDashboard .sidebar li:hover a, .mainDashboard .sidebar li .dash-form-btn:hover{
+    background-color: rgb(52, 52, 52);
+    border-radius: 25px;
+}
+.mainDashboard .sidebar li:hover .listBorder{
+    height: 30px;
+    width: 4px;
+    border-radius: 10px;
+    background-color: var(--green);
+}
+.mainDashboard .sidebar li .listBorder{
+    margin-right: 15px;
+} 
+.mainDashboard .sidebar li i{
+    margin-right: 5px;
+}
+i{
+    font-style: normal;
+}
+
+.mainDashboard .body{
+    padding: 0 15px;
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.mainDashboard .body .forms{
+    width: 45%;
+    max-width: 350px;
+    padding: 0 15px;
+    background-color: aliceblue;
+    box-shadow: 0 0 5px 5px rgb(232, 232, 232);
+}
+.mainDashboard .body .dashboard-form form{
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.mainDashboard .body .dashboard-form input{
+    padding: 10px;
+}
+
+.mainDashboard .body .dashboard-form button{
+    padding: 10px;
+    border: none;
+}
+
+.mainDashboard .body .dashboard-form .edit button{
+    background-color: var(--black);
+    color: var(--white);
+}
+
+.mainDashboard .body .dashboard-form .addNew button{
+    background-color: var(--green);
+}
+
+@media screen and (min-width: 850px) {
+    .mainDashboard .body{
+        margin-left: 350px;
+    }
+}
+@media screen and (max-width: 569px) {
+    .mainDashboard .sidebar .menubar{
+        transform: translateX(-500px);
+        transition: 0.5s ease;
+    }
+    .mainDashboard .sidebar input:checked ~ .menubar{
+        transform: translateX(0);
+    }
+    .hamburger{
+        display: block;
+    }
+}

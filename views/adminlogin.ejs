@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="styles/styles.css">
+    <title>Document</title>
+</head>
+<body>
+    <main class="mainLogin">
+        <div class="container">
+            <div class="heading">
+                <div class="logo"></div>
+                <div class="text">
+                    <h2>
+                        Login as an <span>Admin</span>
+                    </h2>
+                </div>
+            </div>
+            <div class="form">
+                <form action="/login" method="post">
+                    <% if(locals.errorMessage){ %>
+                        <p style="color: red; font-size: 15px;"><%= errorMessage %></p>
+                    <% } %>
+                    <input type="text" name="username" placeholder="Enter your username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit">Admin Login</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

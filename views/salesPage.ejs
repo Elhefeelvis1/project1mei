@@ -1,0 +1,91 @@
+<%- include("./partials/header.ejs") %>
+    <main class="salesMain">
+        <div class="searchFilters">
+            <form action="" method="post">
+                <input type="text" name="item" placeholder="Enter the item name">
+                <label for="">Choose a category: 
+                    <select name="" id="">
+                        <option value=""></option>
+                    </select>
+                </label>
+                <input type="text" name="minPrice" placeholder="Enter min price">
+                <input type="text" name="maxPrice" placeholder="Enter max price">
+                <button type="submit">Search <i class="fa-solid fa-search"></i></button>
+            </form>
+        </div>
+        <div class="previousSales">
+            <a href="/previousSales"><i class="fa-solid fa-arrow-left"></i> Previous Sales</a>
+        </div>
+        <div class="tableSection">
+            <div class="itemTable">
+                <p>Select an item</p>
+                <table>
+                    <tr>
+                        <th class="itemName">Item Name</th>
+                        <th class="price">Price</th>
+                        <th class="quantity">Quantity</th>
+                        <th class="category">Category</th>
+                    </tr>
+                    <tr>
+                        <td>Lorem, ipsum. 
+                            <form action="" method="post">
+                                <input type="hidden" name="itemId" value="">
+                                <input type="hidden" name="quantity" value="">
+                                <button type="submit">Select Item</button>
+                            </form>
+                        </td>
+                        <td>3000</td>
+                        <td><input type="number" name="quantity"></td>
+                        <td>lorem</td>
+                        <td>
+                            <form action="" method="post">
+                                <input type="hidden" name="id" value="">
+                                <button type="submit"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="itemTable">
+                <table>
+                    <tr>
+                        <th class="itemName">Item Name</th>
+                        <th class="price">Price</th>
+                        <th class="quantity">Quantity</th>
+                        <th class="category">Category</th>
+                        <th class="actions">Actions</th>
+                    </tr>
+                    <tr>
+                        <td>Lorem, ipsum.</td>
+                        <td>3000</td>
+                        <td><input type="number" name="quantity"></td>
+                        <td>lorem</td>
+                        <td>
+                            <form action="" method="post">
+                                <input type="hidden" name="id" value="">
+                                <button type="submit"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="buttons">
+                <div class="sales">
+                    <a href="/saveSales">Save <i class="fa-solid fa-save"></i></a>
+                    <a href="/savePrint">Save & Print <i class="fa-solid fa-print"></i></a>
+                </div>
+                <div class="clear">
+                    <a href="/clear">Clear all <i class="fa-solid fa-trash"></i></a>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <div class="links"></div>
+        <div class="dev">
+            <p>Powered by Mmaduabuchi</p>
+        </div>
+    </footer>
+</body>
+</html>
+<%- include("./partials/footer.ejs") %>
