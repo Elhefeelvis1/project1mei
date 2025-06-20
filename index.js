@@ -167,7 +167,7 @@ app.post("/registerUser", async (req, res) => {
 app.post("/addExpenses", async (req, res) => {
     let amount = req.body.amount;
     let description = req.body.description;
-    let useId = req.body.userId;
+    let userId = req.body.userId;
 
     try{
         const result = await db.query("INSERT INTO expenses (amount, description, userId) VALUES ($1, $2, $3)",
