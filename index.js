@@ -164,10 +164,12 @@ app.post("/registerUser", async (req, res) => {
         });
     }
 })
+
+// Expenses
 app.post("/addExpenses", async (req, res) => {
     let amount = req.body.amount;
     let description = req.body.description;
-    let userId = req.body.userId;
+    let userId = req.user.id;
 
     try{
         const result = await db.query("INSERT INTO expenses (amount, description, userId) VALUES ($1, $2, $3)",
@@ -176,6 +178,100 @@ app.post("/addExpenses", async (req, res) => {
     }catch(err){
         console.error('Database query error:', err);
         res.status(500).json({ error: `Failed to add expense: ${err.message}` });
+    }
+})
+app.post("/deleteExpense", async (req, res) => {
+    let id = req.body.id;
+
+    try{
+        const result = await db.query("DELETE FROM expenses WHERE id = $1",
+        [id]
+    )
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to add expense: ${err.message}` });
+    }
+})
+
+// Unit route
+app.post("/editUnit", async (req, res) => {
+    let id = req.body.unitId;
+    let unit = req.body.unit;
+
+    try{
+        const result = await db.query("UPDATE unit SET name = $1 WHERE id = $2",
+        [unit, id]
+    )
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to edit Unit: ${err.message}` });
+    }
+})
+app.post("/addNewUnit", async (req, res) => {
+    let unit = req.body.unit;
+
+    try{
+        const result = await db.query("INSERT INTO unit (name) VALUES ($1)",
+        [unit]
+    )
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to add new Unit: ${err.message}` });
+    }
+})
+
+// Categories route
+app.post("/editCategory", async (req, res) => {
+    let id = req.body.categoryId;
+    let category = req.body.category;
+
+    try{
+        const result = await db.query("UPDATE categories SET name = $1 WHERE id = $2",
+        [category, id]
+    )
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to edit category: ${err.message}` });
+    }
+})
+app.post("/addNewCategory", async (req, res) => {
+    let category = req.body.category;
+
+    try{
+        const result = await db.query("INSERT INTO categories (name) VALUES ($1)",
+        [category]
+    )
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to add new category: ${err.message}` });
+    }
+})
+
+// Suppliers route
+app.post("/editSupplier", async (req, res) => {
+    let id = req.body.supplierId;
+    let supplier = req.body.supplier;
+
+    try{
+        const result = await db.query("UPDATE suppliers SET name = $1 WHERE id = $2",
+        [supplier, id]
+    )
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to edit supplier: ${err.message}` });
+    }
+})
+app.post("/addNewCategory", async (req, res) => {
+    let supplier = req.body.supplier;
+
+    try{
+        const result = await db.query("INSERT INTO suppliers (name) VALUES ($1)",
+        [supplier]);
+        
+        
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to add new supplier: ${err.message}` });
     }
 })
 
