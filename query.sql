@@ -64,8 +64,6 @@ CREATE TABLE categories(
     name TEXT NOT NULL
 );
 
-INSERT INTO categories (name) VALUES ('Uncategorized');
-
 CREATE TABLE suppliers(
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL
