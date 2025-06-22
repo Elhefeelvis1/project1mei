@@ -44,6 +44,27 @@ app.use((req, res, next) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Some functions
+function addLabel(name, tableName){
+    if(addEdit.addNew(name, tableName, db)){
+        req.flash('success_msg', `New ${name} successfully added to ${tableName}`)
+        res.redirect("/dashboard");
+    }else{
+        req.flash('success_msg', `${name} not added, try again!`)
+        res.redirect("/dashboard");
+    }
+}
+
+function editLabel(name, id, tableName){
+    if(addEdit.addNew(name, id, tableName, db)){
+        req.flash('success_msg', `${name} successfully edited in ${tableName}`)
+        res.redirect("/dashboard");
+    }else{
+        req.flash('success_msg', `${name} not edited, try again!`)
+        res.redirect("/dashboard");
+    }
+}
+
 //Starting database connection
 db.connect();
 
@@ -226,24 +247,12 @@ app.post("/editUnit", async (req, res) => {
     let name = req.body.unit;
     let id = req.body.unitId;
 
-    if(addEdit.edit(name, id, units, db)){
-        req.flash('success_msg', `${name} successfully edited in units`)
-        res.redirect("/dashboard");
-    }else{
-        req.flash('success_msg', `${name} not edited, try again!`)
-        res.redirect("/dashboard");
-    }
+    editLabel(name, id, units);
 })
 app.post("/addNewUnit", async (req, res) => {
     let name = req.body.unit;
 
-    if(addEdit.addNew(name, units, db)){
-        req.flash('success_msg', `New ${name} successfully added to units`)
-        res.redirect("/dashboard");
-    }else{
-        req.flash('success_msg', `${name} not added, try again!`)
-        res.redirect("/dashboard");
-    }
+    addLabel(name, units);
 })
 
 // Categories route
@@ -251,32 +260,25 @@ app.post("/editCategory", async (req, res) => {
     let name = req.body.category;
     let id = req.body.categoryId;
 
-    if(addEdit.edit(name, id, categories, db)){
-        req.flash('success_msg', `${name} successfully edited in categories`)
-        res.redirect("dashboard.ejs");
-    }else{
-        req.flash('success_msg', `${name} not edited, try again!`)
-        res.redirect("dashboard.ejs");
-    }
+    editLabel(name, id, categories);
 })
 app.post("/addNewCategory", async (req, res) => {
     let name = req.body.category;
 
-    if(addEdit.addNew(name, categories, db)){
-        req.flash('success_msg', `New ${name} successfully added to categories`)
-        res.redirect("dashboard.ejs");
-    }else{
-        req.flash('success_msg', `${name} not added, try again!`)
-        res.redirect("dashboard.ejs");
-    }
+    addLabel(name, categories);
 })
 
 // Suppliers route
 app.post("/editSupplier", async (req, res) => {
-    addEdit.edit(req.body.supplier, req.body.supplierId, suppliers, db);
+    let name = req.body.supplier;
+    let id = req.body.supplierId;
+
+    editLabel(name, id, suppliers);
 })
 app.post("/addNewSupplier", async (req, res) => {
-    addEdit.addNew(req.body.supplier, suppliers, db);
+    let name = req.body.supplier;
+
+    addLabel(name, suppliers);
 })
 
 app.post("/saleslogin", passport.authenticate("local", {
