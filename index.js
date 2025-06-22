@@ -33,6 +33,13 @@ app.use(session({
 }));
 // Flash Messages Middleware
 app.use(flash());
+// Make flash messages available in all templates
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.failure_msg = req.flash('failure_msg');
+   
+    next();
+});
 // Passport Middleware
 app.use(passport.initialize());
 app.use(passport.session());
@@ -216,18 +223,52 @@ app.post("/deleteExpense", async (req, res) => {
 
 // Unit route
 app.post("/editUnit", async (req, res) => {
-    addEdit.edit(req.body.unit, req.body.unitId, units, db);
+    let name = req.body.unit;
+    let id = req.body.unitId;
+
+    if(addEdit.edit(name, id, units, db)){
+        req.flash('success_msg', `${name} successfully edited in units`)
+        res.redirect("/dashboard");
+    }else{
+        req.flash('success_msg', `${name} not edited, try again!`)
+        res.redirect("/dashboard");
+    }
 })
 app.post("/addNewUnit", async (req, res) => {
-    addEdit.addNew(req.body.unit, units, db);
+    let name = req.body.unit;
+
+    if(addEdit.addNew(name, units, db)){
+        req.flash('success_msg', `New ${name} successfully added to units`)
+        res.redirect("/dashboard");
+    }else{
+        req.flash('success_msg', `${name} not added, try again!`)
+        res.redirect("/dashboard");
+    }
 })
 
 // Categories route
 app.post("/editCategory", async (req, res) => {
-    addEdit.edit(req.body.category, req.body.categoryId, categories, db);
+    let name = req.body.category;
+    let id = req.body.categoryId;
+
+    if(addEdit.edit(name, id, categories, db)){
+        req.flash('success_msg', `${name} successfully edited in categories`)
+        res.redirect("dashboard.ejs");
+    }else{
+        req.flash('success_msg', `${name} not edited, try again!`)
+        res.redirect("dashboard.ejs");
+    }
 })
 app.post("/addNewCategory", async (req, res) => {
-    addEdit.addNew(req.body.category, units, db);
+    let name = req.body.category;
+
+    if(addEdit.addNew(name, categories, db)){
+        req.flash('success_msg', `New ${name} successfully added to categories`)
+        res.redirect("dashboard.ejs");
+    }else{
+        req.flash('success_msg', `${name} not added, try again!`)
+        res.redirect("dashboard.ejs");
+    }
 })
 
 // Suppliers route

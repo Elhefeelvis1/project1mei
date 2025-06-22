@@ -1,3 +1,4 @@
+-- Already created table start
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL,
@@ -7,6 +8,41 @@ CREATE TABLE users (
 
     UNIQUE (username)
 );
+
+CREATE TABLE units(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE categories(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE suppliers(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE companies(
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE expenses(
+    id SERIAL PRIMARY KEY,
+    amount DECIMAL(10, 2) NOT NULL,
+    description TEXT NOT NULL,
+    date DATE DEFAULT CURRENT_DATE,
+    user_id INTEGER,
+
+    CONSTRAINT fk_user_id
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT
+)
+-- Already created table end
 
 CREATE TABLE all_stocks (
     id SERIAL PRIMARY KEY,
@@ -53,40 +89,6 @@ CREATE TABLE all_stocks (
         ON DELETE SET DEFAULT
 
 );
-
-CREATE TABLE units(
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
-CREATE TABLE categories(
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
-CREATE TABLE suppliers(
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
-CREATE TABLE companies(
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
-CREATE TABLE expenses(
-    id SERIAL PRIMARY KEY,
-    amount DECIMAL(10, 2) NOT NULL,
-    description TEXT NOT NULL,
-    date 
-    user_id INTEGER,
-
-    CONSTRAINT fk_user_id
-        FOREIGN KEY (user_id)
-        REFERENCES users (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-)
 
 CREATE TABLE purchases(
     id SERIAL PRIMARY KEY,
