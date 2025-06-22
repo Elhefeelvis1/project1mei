@@ -45,22 +45,22 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Some functions
-function addLabel(name, tableName){
+function addLabel(name, tableName, req, res){
     if(addEdit.addNew(name, tableName, db)){
         req.flash('success_msg', `New ${name} successfully added to ${tableName}`)
         res.redirect("/dashboard");
     }else{
-        req.flash('success_msg', `${name} not added, try again!`)
+        req.flash('failure_msg', `${name} not added, try again!`)
         res.redirect("/dashboard");
     }
 }
 
-function editLabel(name, id, tableName){
+function editLabel(name, id, tableName, req, res){
     if(addEdit.addNew(name, id, tableName, db)){
         req.flash('success_msg', `${name} successfully edited in ${tableName}`)
         res.redirect("/dashboard");
     }else{
-        req.flash('success_msg', `${name} not edited, try again!`)
+        req.flash('failure_msg', `${name} not edited, try again!`)
         res.redirect("/dashboard");
     }
 }
@@ -161,13 +161,11 @@ app.post("/editUser", async (req, res) => {
         const result = await db.query(sqlQuery, params);
         console.log('Database update result:', result.rows);
         if (result.rowCount > 0) {
-            res.render('/dashboard.ejs', {
-                feedback: "User Updated Successfully"
-            })
+            req.flash('success_msg', "User Updated Successfully")
+            res.redirect("/dashboard");
         } else {
-            res.render('/dashboard.ejs', {
-                feedback: "User not found or no changes made."
-            })
+            req.flash('failure_msg', "User not found or no changes made.")
+            res.redirect("/dashboard");
         }
     } catch (err) {
         console.error('Database query error:', err);
@@ -182,17 +180,14 @@ app.post("/registerUser", async (req, res) => {
     const result = await userAuth.registerUser(username, password, role, db);
     console.log(result);
     if(result === "Already exists"){
-        res.render("dashboard.ejs", {
-            feedback: "This username already exists"
-        });
+        req.flash('failure_msg', "This username already exists")
+        res.redirect("/dashboard");
     }else if(result === "error"){
-        res.render("dashboard.ejs", {
-            feedback: "There was an unexpected error, please try again"
-        });
+        req.flash('failure_msg', "There was an unexpected error, please try again")
+        res.redirect("/dashboard");
     }else{
-        res.render("dashboard.ejs", {
-            feedback: `New user: ${username}, added successfully`
-        });
+        req.flash('success_msg', `New user: ${username}, added successfully`)
+        res.redirect("/dashboard");
     }
 })
 
@@ -200,20 +195,18 @@ app.post("/registerUser", async (req, res) => {
 app.post("/addExpenses", async (req, res) => {
     let amount = req.body.amount;
     let description = req.body.description;
-    let userId = req.user.id;
+    let userId = req.user.userId;
 
     try{
         const result = await db.query("INSERT INTO expenses (amount, description, userId) VALUES ($1, $2, $3)",
         [amount, description, userId]);
         
         if(result.rowCount > 0){
-            res.render("dashboard.ejs", {
-                feedback: "New expense successfully added"
-            })
+            req.flash('success_msg', "New expense successfully added")
+            res.redirect("/dashboard");
         }else{
-            res.render("dashboard.ejs", {
-                feedback: "Expense not added, try again!"
-            })
+            req.flash('failure_msg', "Expense not added, try again!")
+            res.redirect("/dashboard");
         }
     }catch(err){
         console.error('Database query error:', err);
@@ -228,13 +221,11 @@ app.post("/deleteExpense", async (req, res) => {
         [id]);
 
         if(result.rowCount > 0){
-            res.render("dashboard.ejs", {
-                feedback: "Row successfully deleted"
-            })
+            req.flash('success_msg', "Row successfully deleted")
+            res.redirect("/dashboard");
         }else{
-            res.render("dashboard.ejs", {
-                feedback: "Row not deleted, try again!"
-            })
+            req.flash('failure_msg', "Row not deleted, try again!")
+            res.redirect("/dashboard");
         }
     }catch(err){
         console.error('Database query error:', err);
@@ -247,12 +238,12 @@ app.post("/editUnit", async (req, res) => {
     let name = req.body.unit;
     let id = req.body.unitId;
 
-    editLabel(name, id, units);
+    editLabel(name, id, 'units', req, res);
 })
 app.post("/addNewUnit", async (req, res) => {
     let name = req.body.unit;
 
-    addLabel(name, units);
+    addLabel(name, 'units', req, res);
 })
 
 // Categories route
@@ -260,12 +251,12 @@ app.post("/editCategory", async (req, res) => {
     let name = req.body.category;
     let id = req.body.categoryId;
 
-    editLabel(name, id, categories);
+    editLabel(name, id, 'categories');
 })
 app.post("/addNewCategory", async (req, res) => {
     let name = req.body.category;
 
-    addLabel(name, categories);
+    addLabel(name, 'categories');
 })
 
 // Suppliers route
@@ -273,12 +264,12 @@ app.post("/editSupplier", async (req, res) => {
     let name = req.body.supplier;
     let id = req.body.supplierId;
 
-    editLabel(name, id, suppliers);
+    editLabel(name, id, 'suppliers');
 })
 app.post("/addNewSupplier", async (req, res) => {
     let name = req.body.supplier;
 
-    addLabel(name, suppliers);
+    addLabel(name, 'suppliers');
 })
 
 app.post("/saleslogin", passport.authenticate("local", {
