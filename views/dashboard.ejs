@@ -33,12 +33,13 @@
             <div class="body">
                 <div class="forms">
                     <div class="dashboard-form users-form">
-                        <h3 style="text-align: center;">Edit or Add new user</h3>
+                        <h3 style="text-align: center;">Edit user</h3>
                         <div class="edit">
                             <% if(locals.users){ %>
                                 <form action="/editUser" method="post" id="editUserForm">
                                     <label for="userEdit">Select the user to Edit</label>
-                                    <select name="userId" id="userEdit">
+                                    <select name="userId" id="userEdit" required>
+                                        <option hidden disabled selected value>(select an option)</option>
                                       <% users.forEach(user => { %>
                                         <option value="<%= user.id %>" >
                                           <%= user.username %>
@@ -48,7 +49,8 @@
                                     <input type="text" name="username" placeholder="Enter new username">
                                     <input type="text" name="password" id="Enter new password">
                                     <label for="change-role"></label>
-                                    <select name="role" id="change-role">
+                                    <select name="role" id="change-role" required>
+                                        <option hidden disabled selected value>(select an option)</option>
                                         <option value="sales">Sales Person</option>
                                         <option value="staff">Staff</option>
                                         <option value="manager">Manger</option>
@@ -58,13 +60,14 @@
                                 </form>
                             <% } %>
                         </div>
+                        <h3 style="text-align: center;">Add new user</h3>
                         <div class="addNew">
-                            <p>Add new User</p>
                             <form action="/registerUser" method="post">
                                 <input type="text" name="username" placeholder="Enter username">
                                 <input type="text" name="password" placeholder="Enter password">
                                 <label for="role"></label>
-                                <select name="role" id="role">
+                                <select name="role" id="role" required>
+                                    <option hidden disabled selected value>(select an option)</option>
                                     <option value="sales">Sales Person</option>
                                     <option value="staff">Staff</option>
                                     <option value="manager">Manger</option>
@@ -87,7 +90,7 @@
                         </div>
                     </div>
                     <div class="dashboard-form units-form hidden">
-                        <h3 style="text-align: center;">Edit or Add new Unit</h3>
+                        <h3 style="text-align: center;">Edit Unit</h3>
                         <div class="edit">
                             <form action="/editUnit" method="post">
                                 <select name="unitId" id="unit" required>
@@ -98,6 +101,7 @@
                                 <button type="submit">Update</button>
                             </form>
                         </div>
+                        <h3 style="text-align: center;">Add new Unit</h3>
                         <div class="addNew">
                             <form action="/addNewUnit" method="post">
                                 <input type="text" name="unit" placeholder="Enter new unit">
@@ -106,17 +110,18 @@
                         </div>
                     </div>
                     <div class="dashboard-form categories-form hidden">
-                        <h3 style="text-align: center;">Edit or Add new Category</h3>
+                        <h3 style="text-align: center;">Edit Category</h3>
                         <div class="edit">
                             <form action="/editCategory" method="post">
                                 <select name="categoryId" id="category">
-                                    <option hidden disabled selected value>Select an option</option>
+                                    <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
                                 <input type="text" name="category" placeholder="Change the category name">
                                 <button type="submit">Update</button>
                             </form>
                         </div>
+                        <h3 style="text-align: center;">Add new Category</h3>
                         <div class="addNew">
                             <form action="/addNewCategory" method="post">
                                 <input type="text" name="category" placeholder="Enter new category">
@@ -125,17 +130,18 @@
                         </div>
                     </div>
                     <div class="dashboard-form suppliers-form hidden">
-                        <h3 style="text-align: center;">Edit or Add new Supplier</h3>
+                        <h3 style="text-align: center;">Edit Supplier</h3>
                         <div class="edit">
                             <form action="/editSupplier" method="post">
                                 <select name="supplierId" id="supplier">
-                                    <option hidden disabled selected value>Select an option</option>
+                                    <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
                                 <input type="text" name="supplier" placeholder="Change the supplier name">
                                 <button type="submit">Update</button>
                             </form>
                         </div>
+                        <h3 style="text-align: center;">Add new Supplier</h3>
                         <div class="addNew">
                             <form action="/addNewSupplier" method="post">
                                 <input type="text" name="supplier" placeholder="Enter new supplier">
@@ -144,17 +150,18 @@
                         </div>
                     </div>
                     <div class="dashboard-form companies-form hidden">
-                        <h3 style="text-align: center;">Edit or Add new Supplier</h3>
+                        <h3 style="text-align: center;">Edit Supplier</h3>
                         <div class="edit">
                             <form action="/editCompany" method="post">
                                 <select name="companyId" id="company">
-                                    <option hidden disabled selected value>Select an option</option>
+                                    <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
                                 <input type="text" name="company" placeholder="Change the company name">
                                 <button type="submit">Update</button>
                             </form>
                         </div>
+                        <h3 style="text-align: center;">Add new Supplier</h3>
                         <div class="addNew">
                             <form action="/addNewCompany" method="post">
                                 <input type="text" name="company" placeholder="Enter new company">
