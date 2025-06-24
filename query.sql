@@ -9,25 +9,36 @@ CREATE TABLE users (
     UNIQUE (username)
 );
 
-CREATE TABLE units(
+-- Units Table (e.g., 'Tablet', 'Bottle', 'Box')
+CREATE TABLE units (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE categories(
+-- Categories Table (e.g., 'Antibiotics', 'Pain Relievers')
+CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE suppliers(
+-- Insert default 'Uncategorized' category for FK SET DEFAULT
+INSERT INTO categories (id, name) VALUES (0, 'Uncategorized');
+
+-- Suppliers Table
+CREATE TABLE suppliers (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE companies(
+-- Companies Table (manufacturers, brands)
+CREATE TABLE companies (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL UNIQUE
 );
+
+-- Insert default 'Unknown Company' for FK SET DEFAULT
+INSERT INTO companies (id, name) VALUES (0, 'Unknown Company');
+
 
 CREATE TABLE expenses(
     id SERIAL PRIMARY KEY,

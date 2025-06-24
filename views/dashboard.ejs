@@ -22,6 +22,7 @@
                         <li><div class="dash-form-btn"> <div class="listBorder"></div> <i class="fas fa-phone"></i> Add and Edit Units</div></li>
                         <li><div class="dash-form-btn"> <div class="listBorder"></div> <i class="fas fa-phone"></i> Add and Edit Categories</div></li>
                         <li><div class="dash-form-btn"> <div class="listBorder"></div> <i class="fas fa-truck"></i> Add and Edit Suppliers</div></li>
+                        <li><div class="dash-form-btn"> <div class="listBorder"></div> <i class="fas fa-truck"></i> Add and Edit Companies</div></li>
                     </ul>
                 </div>
             </div>
@@ -89,8 +90,9 @@
                         <h3 style="text-align: center;">Edit or Add new Unit</h3>
                         <div class="edit">
                             <form action="/editUnit" method="post">
-                                <select name="unitId" id="unit">
-                                    <option value=""></option>
+                                <select name="unitId" id="unit" required>
+                                    <option hidden disabled selected value>(select an option)</option>
+                                    <option value="test">test</option>
                                 </select>
                                 <input type="text" name="unit" placeholder="Change the unit name">
                                 <button type="submit">Update</button>
@@ -108,7 +110,8 @@
                         <div class="edit">
                             <form action="/editCategory" method="post">
                                 <select name="categoryId" id="category">
-                                    <option value=""></option>
+                                    <option hidden disabled selected value>Select an option</option>
+                                    <option value="test">test</option>
                                 </select>
                                 <input type="text" name="category" placeholder="Change the category name">
                                 <button type="submit">Update</button>
@@ -126,7 +129,8 @@
                         <div class="edit">
                             <form action="/editSupplier" method="post">
                                 <select name="supplierId" id="supplier">
-                                    <option value=""></option>
+                                    <option hidden disabled selected value>Select an option</option>
+                                    <option value="test">test</option>
                                 </select>
                                 <input type="text" name="supplier" placeholder="Change the supplier name">
                                 <button type="submit">Update</button>
@@ -135,6 +139,25 @@
                         <div class="addNew">
                             <form action="/addNewSupplier" method="post">
                                 <input type="text" name="supplier" placeholder="Enter new supplier">
+                                <button type="submit">Update</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="dashboard-form companies-form hidden">
+                        <h3 style="text-align: center;">Edit or Add new Supplier</h3>
+                        <div class="edit">
+                            <form action="/editCompany" method="post">
+                                <select name="companyId" id="company">
+                                    <option hidden disabled selected value>Select an option</option>
+                                    <option value="test">test</option>
+                                </select>
+                                <input type="text" name="company" placeholder="Change the company name">
+                                <button type="submit">Update</button>
+                            </form>
+                        </div>
+                        <div class="addNew">
+                            <form action="/addNewCompany" method="post">
+                                <input type="text" name="company" placeholder="Enter new company">
                                 <button type="submit">Update</button>
                             </form>
                         </div>

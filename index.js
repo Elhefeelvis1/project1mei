@@ -195,10 +195,10 @@ app.post("/registerUser", async (req, res) => {
 app.post("/addExpenses", async (req, res) => {
     let amount = req.body.amount;
     let description = req.body.description;
-    let userId = req.user.userId;
+    let userId = req.body.userId; //to be changed to req.user.id later
 
     try{
-        const result = await db.query("INSERT INTO expenses (amount, description, userId) VALUES ($1, $2, $3)",
+        const result = await db.query("INSERT INTO expenses (amount, description, user_id) VALUES ($1, $2, $3)",
         [amount, description, userId]);
         
         if(result.rowCount > 0){
@@ -270,6 +270,19 @@ app.post("/addNewSupplier", async (req, res) => {
     let name = req.body.supplier;
 
     addLabel(name, 'suppliers');
+})
+
+// Companies route
+app.post("/editCompany", async (req, res) => {
+    let name = req.body.company;
+    let id = req.body.companyId;
+
+    editLabel(name, id, 'companies');
+})
+app.post("/addNewCompany", async (req, res) => {
+    let name = req.body.company;
+
+    addLabel(name, 'companies');
 })
 
 app.post("/saleslogin", passport.authenticate("local", {
