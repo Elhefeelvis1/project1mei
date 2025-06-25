@@ -233,6 +233,54 @@ app.post("/deleteExpense", async (req, res) => {
     }
 })
 
+// Customer route
+app.post("/editCustomer", async (req, res) => {
+    let id = req.body.customerId;
+    let name = req.body.name;
+    let phone = req.body.phone;
+    let address = req.body.address;
+    let email = req.body.email;
+
+    try{
+        const result = await db.query('UPDATE customers SET name = $1, phone_number = $2, address = $3, email = $4 WHERE id = $5',
+            [name, phone, address, email, id]
+        )
+
+        if(result.rowCount > 0){
+            req.flash('success_msg', "Customer's data successfully edited")
+            res.redirect("/dashboard");
+        }else{
+            req.flash('failure_msg', "Data not edited, please try again...")
+            res.redirect("/dashboard");
+        }
+    }catch(err){
+        console.error(err);
+    }
+})
+app.post("/addNewCustomer", async (req, res) => {
+    let name = req.body.name;
+    let phone = req.body.phone;
+    let address = req.body.address;
+    let email = req.body.email;
+
+    try{
+        const result = await db.query('INSERT INTO customers(name, phone_number, address, email) VALUES ($1, $2, $3, $4)',
+            [name, phone, address, email]
+        )
+
+        if(result.rowCount > 0){
+            req.flash('success_msg', "New customer successfully added")
+            res.redirect("/dashboard");
+        }else{
+            req.flash('failure_msg', "Customer not added, please try again...")
+            res.redirect("/dashboard");
+        }
+    }catch(err){
+        console.error(err);
+    }
+})
+
+
 // Unit route
 app.post("/editUnit", async (req, res) => {
     let name = req.body.unit;
@@ -251,12 +299,12 @@ app.post("/editCategory", async (req, res) => {
     let name = req.body.category;
     let id = req.body.categoryId;
 
-    editLabel(name, id, 'categories');
+    editLabel(name, id, 'categories', req, res);
 })
 app.post("/addNewCategory", async (req, res) => {
     let name = req.body.category;
 
-    addLabel(name, 'categories');
+    addLabel(name, 'categories', req, res);
 })
 
 // Suppliers route
@@ -264,12 +312,12 @@ app.post("/editSupplier", async (req, res) => {
     let name = req.body.supplier;
     let id = req.body.supplierId;
 
-    editLabel(name, id, 'suppliers');
+    editLabel(name, id, 'suppliers', req, res);
 })
 app.post("/addNewSupplier", async (req, res) => {
     let name = req.body.supplier;
 
-    addLabel(name, 'suppliers');
+    addLabel(name, 'suppliers', req, res);
 })
 
 // Companies route
@@ -277,12 +325,12 @@ app.post("/editCompany", async (req, res) => {
     let name = req.body.company;
     let id = req.body.companyId;
 
-    editLabel(name, id, 'companies');
+    editLabel(name, id, 'companies', req, res);
 })
 app.post("/addNewCompany", async (req, res) => {
     let name = req.body.company;
 
-    addLabel(name, 'companies');
+    addLabel(name, 'companies', req, res);
 })
 
 app.post("/saleslogin", passport.authenticate("local", {

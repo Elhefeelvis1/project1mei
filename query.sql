@@ -55,6 +55,14 @@ CREATE TABLE expenses(
 )
 -- Already created table end
 
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone_number INT,
+    address TEXT,
+    email TEXT
+)
+
 CREATE TABLE all_stocks (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
