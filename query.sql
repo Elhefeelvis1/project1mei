@@ -53,7 +53,6 @@ CREATE TABLE expenses(
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 )
--- Already created table end
 
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
@@ -62,6 +61,7 @@ CREATE TABLE customers (
     address TEXT,
     email TEXT
 )
+-- Already created table end
 
 CREATE TABLE all_stocks (
     id SERIAL PRIMARY KEY,
