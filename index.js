@@ -11,8 +11,10 @@ import bcrypt from 'bcrypt';
 import db from "./imports/dbConn.js";
 // Importing login and register from imports folder
 import * as userAuth from "./imports/login_register.js";
-// Import add/edit labels functions
+// Importing add/edit labels functions
 import * as addEdit from "./imports/add_edit_labels.js";
+// Importing add/edit labels functions
+import * as sales from "./imports/salesLogic.js";
 
 
 const app = express();
@@ -106,6 +108,17 @@ app.get('/saleslogin', (req, res) => {
         errorMessage: errorMessage.length ? errorMessage[0] : null
     });
 });
+
+// *********Sales processing
+// step 1: getting the list of items from a search
+app.post("/searchItems", (req, res) => {
+    let itemName = req.body.itemName;
+    let category = req.body.category;
+    let minPrice = req.body.minPrice;
+    let maxPrice = req.body.maxPrice;
+
+    
+})
 
 //********Register new / Edit user 
 app.post("/editUser", async (req, res) => {
