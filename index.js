@@ -111,15 +111,29 @@ app.get('/saleslogin', (req, res) => {
 
 // *********Sales processing
 // step 1: getting the list of items from a search
-app.post("/searchItems", (req, res) => {
+app.post("/searchItems", async (req, res) => {
     let itemName = req.body.itemName;
     let category = req.body.category;
     let minPrice = req.body.minPrice;
     let maxPrice = req.body.maxPrice;
 
-    const data = sales.searchDb(itemName, category, minPrice, maxPrice, db);
+    try{
+        const data = await sales.searchDb(itemName, category, minPrice, maxPrice, db);
 
-    console.log(data);
+        if(data.length > 0){
+            res.render('salesPage.ejs', 
+                {
+                    contents: data
+                }
+            )
+        }else{
+            req.flash('failure_msg', "Row not deleted, try again!")
+            res.redirect("/salesPage");
+        }
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({ error: `Failed to add expense: ${err.message}` });
+    }
 })
 
 //********Register new / Edit user 

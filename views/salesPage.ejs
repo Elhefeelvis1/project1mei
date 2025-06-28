@@ -1,7 +1,7 @@
 <%- include("./partials/header.ejs") %>
     <main class="salesMain">
         <div class="searchFilters">
-            <form action="" method="post">
+            <form action="/searchItems" method="post">
                 <input type="text" name="itemName" placeholder="Enter the item name">
                 <label for="">Choose a category: 
                     <select name="category" id="">
@@ -17,6 +17,8 @@
             <a href="/previousSales"><i class="fa-solid fa-arrow-left"></i> Previous Sales</a>
         </div>
         <div class="tableSection">
+        <% if(locals.contents){ %>
+            <% contents.forEach((content) => { %>
             <div class="itemTable">
                 <p>Select an item</p>
                 <table>
@@ -27,25 +29,14 @@
                         <th class="category">Category</th>
                     </tr>
                     <tr>
-                        <td>Lorem, ipsum. 
-                            <form action="" method="post">
-                                <input type="hidden" name="itemId" value="">
-                                <input type="hidden" name="quantity" value="">
-                                <button type="submit">Select Item</button>
-                            </form>
-                        </td>
-                        <td>3000</td>
-                        <td><input type="number" name="quantity"></td>
-                        <td>lorem</td>
-                        <td>
-                            <form action="" method="post">
-                                <input type="hidden" name="id" value="">
-                                <button type="submit"><i class="fa-solid fa-trash"></i></button>
-                            </form>
-                        </td>
+                        <td><%= content.drug_name %></td>
+                        <td>N<%= content.unit_selling_price %></td>
+                        <td><%= content.total_quantity_in_stock %></td>
+                        <td><%= content.category_name %></td>
                     </tr>
                 </table>
             </div>
+            <% })} %>
             <div class="itemTable">
                 <table>
                     <tr>

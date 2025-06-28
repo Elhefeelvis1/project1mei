@@ -7,7 +7,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
     let paramCounter = 1; // Used for $1, $2, $3...
 
     if (name) {
-        queryParts.push(`name ILIKE $${paramCounter} `);
+        queryParts.push(`ast.name ILIKE $${paramCounter} `);
         params.push(`%${name}%`);
         paramCounter++;
     }
@@ -20,7 +20,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
 
     const parsedStartPrice = parseFloat(startPrice);
     if (!isNaN(parsedStartPrice)) { // Check if it's a valid number
-        queryParts.push(`unit_selling_price >= $${paramCounter}`);
+        queryParts.push(`ast.unit_selling_price >= $${paramCounter}`);
         params.push(parsedStartPrice);
         paramCounter++;
     } else if (startPrice !== null && startPrice !== undefined && startPrice !== '') {
@@ -30,7 +30,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
 
     const parsedStopPrice = parseFloat(stopPrice);
     if (!isNaN(parsedStopPrice)) { // Check if it's a valid number
-        queryParts.push(`unit_selling_price <= $${paramCounter}`);
+        queryParts.push(`ast.unit_selling_price <= $${paramCounter}`);
         params.push(parsedStopPrice);
         paramCounter++;
     } else if (stopPrice !== null && stopPrice !== undefined && stopPrice !== '') {
@@ -38,7 +38,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
         console.warn(`searchDb: Invalid stopPrice input ignored: ${stopPrice}`);
     }
 
-    let sqlQuery = 'SELECT * FROM all_stocks JOIN units ON unit_id = units.id JOIN categories ON category_id = categories.id';
+    let sqlQuery = 'SELECT ast.id AS drug_id, ast.name AS drug_name, ast.unit_selling_price, ast.total_quantity_in_stock, ast.user_id, categories.name AS category_name, units.name AS unit_name FROM all_stocks ast JOIN units ON ast.unit_id = units.id JOIN categories ON ast.category_id = categories.id';
 
     if (queryParts.length > 0) {
         sqlQuery += ' WHERE ' + queryParts.join(' AND ');
