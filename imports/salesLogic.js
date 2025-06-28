@@ -7,20 +7,20 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
     let paramCounter = 1; // Used for $1, $2, $3...
 
     if (name) {
-        queryParts.push(`drugNames ILIKE $${paramCounter} `);
+        queryParts.push(`name ILIKE $${paramCounter} `);
         params.push(`%${name}%`);
         paramCounter++;
     }
 
     if (category) {
-        queryParts.push(`categories ILIKE $${paramCounter}`);
+        queryParts.push(`categories.name ILIKE $${paramCounter}`);
         params.push(`%${category}%`);
         paramCounter++;
     }
 
     const parsedStartPrice = parseFloat(startPrice);
     if (!isNaN(parsedStartPrice)) { // Check if it's a valid number
-        queryParts.push(`price >= $${paramCounter}`);
+        queryParts.push(`unit_selling_price >= $${paramCounter}`);
         params.push(parsedStartPrice);
         paramCounter++;
     } else if (startPrice !== null && startPrice !== undefined && startPrice !== '') {
@@ -30,7 +30,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
 
     const parsedStopPrice = parseFloat(stopPrice);
     if (!isNaN(parsedStopPrice)) { // Check if it's a valid number
-        queryParts.push(`price <= $${paramCounter}`);
+        queryParts.push(`unit_selling_price <= $${paramCounter}`);
         params.push(parsedStopPrice);
         paramCounter++;
     } else if (stopPrice !== null && stopPrice !== undefined && stopPrice !== '') {
@@ -38,7 +38,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
         console.warn(`searchDb: Invalid stopPrice input ignored: ${stopPrice}`);
     }
 
-    let sqlQuery = 'SELECT * FROM drugs';
+    let sqlQuery = 'SELECT * FROM all_stocks JOIN units ON unit_id = units.id JOIN categories ON category_id = categories.id';
 
     if (queryParts.length > 0) {
         sqlQuery += ' WHERE ' + queryParts.join(' AND ');

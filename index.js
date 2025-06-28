@@ -117,7 +117,9 @@ app.post("/searchItems", (req, res) => {
     let minPrice = req.body.minPrice;
     let maxPrice = req.body.maxPrice;
 
-    
+    const data = sales.searchDb(itemName, category, minPrice, maxPrice, db);
+
+    console.log(data);
 })
 
 //********Register new / Edit user 
