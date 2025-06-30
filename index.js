@@ -46,7 +46,10 @@ app.use((req, res, next) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Some functions
+// Global Variables
+let selectedItems = [];
+let categoryList = [];
+// Global functions
 function addLabel(name, tableName, req, res){
     if(addEdit.addNew(name, tableName, db)){
         req.flash('success_msg', `New ${name} successfully added to ${tableName}`)
@@ -73,10 +76,20 @@ db.connect();
 app.get("/", (req, res) => {
     res.render("index.ejs");
 });
-app.get("/salesPage", (req, res) => {
+app.get("/salesPage", async (req, res) => {
     if(req.isAuthenticated()){
+        const result = await db.query('SELECT name FROM categories')
+
+        categoryList = [];
+        let categories = result.rows;
+        categories.forEach((ctg) => {
+            categoryList.push(ctg.name);
+        });
+
         res.render("salesPage.ejs", {
-            username: req.user
+            username: req.user,
+            selectedItems: selectedItems,
+            categories: categoryList
         });
     }else{
         res.render("saleslogin.ejs");
@@ -89,9 +102,6 @@ app.get("/dashboard", async (req, res) => {
         users: userData.rows
     });
 })
-app.get("/adminLogin", (req, res) => {
-    res.render("adminLogin.ejs");
-});
 // User log in
 app.get("/adminlogin", (req, res) => {
     const errorMessage = req.flash('error');
@@ -123,17 +133,67 @@ app.post("/searchItems", async (req, res) => {
         if(data.length > 0){
             res.render('salesPage.ejs', 
                 {
-                    contents: data
+                    username: req.user,
+                    selectedItems: selectedItems,
+                    contents: data,
+                    categories: categoryList
                 }
             )
         }else{
-            req.flash('failure_msg', "Row not deleted, try again!")
+            req.flash('failure_msg', "Item not found, check the name!")
             res.redirect("/salesPage");
         }
     }catch(err){
         console.error('Database query error:', err);
-        res.status(500).json({ error: `Failed to add expense: ${err.message}` });
+        res.status(500).json({ error: `Couldn't search for item: ${err.message}` });
     }
+})
+
+// step 2: storing selected items in a temporary array
+app.post("/selectItem", (req, res) => {
+    let itemName = req.body.itemName;
+    let sellPrice = req.body.sellPrice;
+    let quantityInStock = req.body.quantityInStock;
+    let unit = req.body.unit;
+    let productId = req.body.productId;
+    let category = req.body.category;
+
+    if(quantityInStock > 0){
+        let itemObject = {
+            productId: productId,
+            itemName: itemName,
+            sellPrice: sellPrice,
+            quantity: 1,
+            unit: unit,
+            category: category
+        }
+
+        selectedItems.push(itemObject);
+        console.log(selectedItems)
+        req.flash('success_msg', "Item added");
+        res.redirect("/salesPage");
+    }else{
+        req.flash('failure_msg', "Item out of stock!!");
+        res.redirect("/salesPage");
+    }
+})
+
+// Delete an item
+app.post("/removeItem", (req, res) => {
+    let id = req.body.id;
+
+    selectedItems.forEach((item, index) => {
+        if(item.productId === id){
+            let itemName = item.itemName
+            selectedItems.splice(index, 1);
+
+            req.flash('success_msg', `Item: ${itemName} removed`);
+            res.redirect("/salesPage");
+        }else{
+            req.flash('failure_msg', `Item not found.`);
+            res.redirect("/salesPage");
+        }
+    })
 })
 
 //********Register new / Edit user 

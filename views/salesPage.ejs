@@ -1,11 +1,20 @@
 <%- include("./partials/header.ejs") %>
     <main class="salesMain">
+        <div class="flash-message">
+            <p class="success-msg"><%= success_msg %></p>
+            <p class="failure-msg"><%= failure_msg %></p>
+        </div>
         <div class="searchFilters">
             <form action="/searchItems" method="post">
                 <input type="text" name="itemName" placeholder="Enter the item name">
                 <label for="">Choose a category: 
                     <select name="category" id="">
-                        <option value=""></option>
+                        <option hidden disabled selected value>(select an option)</option>
+                        <% if(locals.categories){ %>
+                        <% categories.forEach((ctg) => { %>
+                        <option value="<%= ctg %>"><%= ctg %></option>
+                        <% }) %>
+                        <% } %>
                     </select>
                 </label>
                 <input type="text" name="minPrice" placeholder="Enter min price">
@@ -18,7 +27,6 @@
         </div>
         <div class="tableSection">
         <% if(locals.contents){ %>
-            <% contents.forEach((content) => { %>
             <div class="itemTable">
                 <p>Select an item</p>
                 <table>
@@ -26,40 +34,58 @@
                         <th class="itemName">Item Name</th>
                         <th class="price">Price</th>
                         <th class="quantity">Quantity</th>
-                        <th class="category">Category</th>
+                        <th class="unit">Unit</th>
                     </tr>
+                    <% contents.forEach((content) => { %>
                     <tr>
-                        <td><%= content.drug_name %></td>
+                        <td>
+                            <form action="/selectItem" method="post">
+                                <input type="submit" value="<%= content.item_name %>">
+                                <input type="hidden" name="itemName" value="<%= content.item_name %>">
+                                <input type="hidden" name="sellPrice" value="<%= content.unit_selling_price %>">
+                                <input type="hidden" name="quantityInStock" value="<%= content.total_quantity_in_stock %>">
+                                <input type="hidden" name="unit" value="<%= content.unit_name %>">
+                                <input type="hidden" name="productId" value="<%= content.item_id %>">
+                                <input type="hidden" name="category" value="<%= content.category_name %>">
+                            </form>
+                        </td>
                         <td>N<%= content.unit_selling_price %></td>
                         <td><%= content.total_quantity_in_stock %></td>
                         <td><%= content.unit_name %></td>
                     </tr>
+                    <% }) %>
                 </table>
             </div>
-            <% })} %>
+            <% } %>
+            <% if(locals.selectedItems){ %>
             <div class="itemTable">
                 <table>
                     <tr>
                         <th class="itemName">Item Name</th>
                         <th class="price">Price</th>
                         <th class="quantity">Quantity</th>
+                        <th class="unit">Unit</th>
                         <th class="category">Category</th>
                         <th class="actions">Actions</th>
                     </tr>
+                    <% selectedItems.forEach((item) => { %>
                     <tr>
-                        <td>Lorem, ipsum.</td>
-                        <td>3000</td>
-                        <td><input type="number" name="quantity"></td>
-                        <td>lorem</td>
+                        <td><%= item.itemName %></td>
+                        <td><%= item.sellPrice %></td>
+                        <td><input type="number" name="quantity" value="<%= item.quantity %>"></td>
+                        <td><%= item.unit %></td>
+                        <td><%= item.category %></td>
                         <td>
-                            <form action="" method="post">
-                                <input type="hidden" name="id" value="">
+                            <form action="/removeItem" method="post">
+                                <input type="hidden" name="id" value="<%= item.productId %>">
                                 <button type="submit"><i class="fa-solid fa-trash"></i></button>
                             </form>
                         </td>
                     </tr>
+                    <% }) %>
                 </table>
             </div>
+            <% } %>
             <div class="buttons">
                 <div class="sales">
                     <a href="/saveSales">Save <i class="fa-solid fa-save"></i></a>

@@ -1,5 +1,3 @@
-let selectedDrugs = [];
-
 // Searching for a drug
 export async function searchDb(name, category, startPrice, stopPrice, db){
     const queryParts = [];
@@ -38,14 +36,14 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
         console.warn(`searchDb: Invalid stopPrice input ignored: ${stopPrice}`);
     }
 
-    let sqlQuery = 'SELECT ast.id AS drug_id, ast.name AS drug_name, ast.unit_selling_price, ast.total_quantity_in_stock, ast.user_id, categories.name AS category_name, units.name AS unit_name FROM all_stocks ast JOIN units ON ast.unit_id = units.id JOIN categories ON ast.category_id = categories.id';
+    let sqlQuery = 'SELECT ast.id AS item_id, ast.name AS item_name, ast.unit_selling_price, ast.total_quantity_in_stock, categories.name AS category_name, units.name AS unit_name FROM all_stocks ast JOIN units ON ast.unit_id = units.id JOIN categories ON ast.category_id = categories.id';
 
     if (queryParts.length > 0) {
         sqlQuery += ' WHERE ' + queryParts.join(' AND ');
     }
 
-    console.log('Generated SQL Query:', sqlQuery);
-    console.log('Parameters:', params);
+    // console.log('Generated SQL Query:', sqlQuery);
+    // console.log('Parameters:', params);
 
     try {
         const result = await db.query(sqlQuery, params);
@@ -54,9 +52,4 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
         console.error('Database query error:', err);
         throw new Error(`Failed to perform database search: ${err.message}`);
     }
-}
-
-// Passing the selected drug into selectedDrugs variable
-export function selected(input){
-    selectedDrugs.push(input);
 }
