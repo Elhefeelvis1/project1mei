@@ -193,6 +193,7 @@ footer a:hover{
 }
 .salesMain .tableSection table{
     width: 100%;
+    border-collapse: collapse;
 }
 .salesMain .itemTable th{
     background-color: var(--black);

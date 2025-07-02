@@ -60,29 +60,35 @@
             <% if(locals.selectedItems){ %>
             <div class="itemTable">
                 <table>
-                    <tr>
-                        <th class="itemName">Item Name</th>
-                        <th class="price">Price</th>
-                        <th class="quantity">Quantity</th>
-                        <th class="unit">Unit</th>
-                        <th class="category">Category</th>
-                        <th class="actions">Actions</th>
-                    </tr>
-                    <% selectedItems.forEach((item) => { %>
-                    <tr>
-                        <td><%= item.itemName %></td>
-                        <td><%= item.sellPrice %></td>
-                        <td><input type="number" name="quantity" value="<%= item.quantity %>"></td>
-                        <td><%= item.unit %></td>
-                        <td><%= item.category %></td>
-                        <td>
-                            <form action="/removeItem" method="post">
-                                <input type="hidden" name="id" value="<%= item.productId %>">
-                                <button type="submit"><i class="fa-solid fa-trash"></i></button>
-                            </form>
-                        </td>
-                    </tr>
-                    <% }) %>
+                    <thead>
+                        <tr>
+                            <th class="itemName">Item Name</th>
+                            <th class="price">Price</th>
+                            <th class="quantity">Quantity</th>
+                            <th class="unit">Unit</th>
+                            <th class="category">Category</th>
+                            <th class="totalCost">Cost</th>
+                            <th class="actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% selectedItems.forEach((item) => { %>
+                        <tr class="item-row">
+                            <td><%= item.itemName %></td>
+                            <td class="item-price"><%= item.sellPrice %></td>
+                            <td><input class="item-quantity" type="number" name="quantity" value="<%= item.quantity %>"></td>
+                            <td><%= item.unit %></td>
+                            <td><%= item.category %></td>
+                            <td><p class="item-total"></p></td>
+                            <td>
+                                <form action="/removeItem" method="post">
+                                    <input type="hidden" name="id" value="<%= item.productId %>">
+                                    <button type="submit"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
                 </table>
             </div>
             <% } %>
@@ -103,6 +109,41 @@
             <p>Powered by Mmaduabuchi</p>
         </div>
     </footer>
+    <script>
+        // Select all rows that contain an item calculation
+        const itemRows = document.querySelectorAll('.item-row');
+
+        // Loop through each item row
+        itemRows.forEach(row => {
+            // Get references to the elements WITHIN THE CURRENT ROW
+            const priceCell = row.querySelector('.item-price'); // This is your <td> with the price
+            const quantityInput = row.querySelector('.item-quantity'); // This is the input for quantity
+            const totalCell = row.querySelector('.item-total');     // This is the <td> to display the row total
+
+            // Function to calculate and display the total for THIS SPECIFIC ROW
+            function calculateRowTotal() {
+                // Get the fixed cost from the <td>'s text content
+                const cost = parseFloat(priceCell.textContent);
+                
+                // Get the editable quantity from the input's value
+                const quantity = parseInt(quantityInput.value);
+
+                // Check if inputs are valid numbers
+                if (!isNaN(cost) && !isNaN(quantity)) {
+                    const rowTotal = cost * quantity;
+                    totalCell.textContent = rowTotal.toFixed(2); // Display with 2 decimal places
+                } else {
+                    totalCell.textContent = 'Invalid input';
+                }
+            }
+
+            // Add event listener ONLY to the quantity input for THIS SPECIFIC ROW
+            quantityInput.addEventListener('input', calculateRowTotal);
+
+            // Initial calculation when the page loads for THIS SPECIFIC ROW
+            calculateRowTotal();
+        });
+    </script>
 </body>
 </html>
 <%- include("./partials/footer.ejs") %>

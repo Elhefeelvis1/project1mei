@@ -53,3 +53,18 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
         throw new Error(`Failed to perform database search: ${err.message}`);
     }
 }
+
+export async function saveSale(userId, saleList, db){
+    try {
+        await client.query('BEGIN'); // Start a transaction
+
+        const userId = userId;
+        const items = saleList
+
+        if (!userId || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ message: 'Invalid sale data provided. User ID and items array are required.' });
+        }
+    }catch(err){
+        console.error(err)
+    }    
+}

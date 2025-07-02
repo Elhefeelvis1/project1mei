@@ -48,7 +48,7 @@ app.use(passport.session());
 
 // Global Variables
 let selectedItems = [];
-let categoryList = [];
+let categoryList;
 // Global functions
 function addLabel(name, tableName, req, res){
     if(addEdit.addNew(name, tableName, db)){
@@ -170,30 +170,43 @@ app.post("/selectItem", (req, res) => {
 
         selectedItems.push(itemObject);
         console.log(selectedItems)
-        req.flash('success_msg', "Item added");
+        req.flash('success_msg', `Item: ${itemName} added`);
         res.redirect("/salesPage");
     }else{
-        req.flash('failure_msg', "Item out of stock!!");
+        req.flash('failure_msg', `Item: ${itemName} out of stock!!`);
         res.redirect("/salesPage");
     }
 })
 
 // Delete an item
 app.post("/removeItem", (req, res) => {
-    let id = req.body.id;
+    const id = req.body.id;
 
-    selectedItems.forEach((item, index) => {
-        if(item.productId === id){
-            let itemName = item.itemName
-            selectedItems.splice(index, 1);
+    const indexToRemove = selectedItems.findIndex(item => item.productId === id)
+    if(indexToRemove > -1){
+        const removedItem = selectedItems.splice(indexToRemove, 1);
+        const itemName = removedItem[0].itemName;
 
-            req.flash('success_msg', `Item: ${itemName} removed`);
-            res.redirect("/salesPage");
-        }else{
-            req.flash('failure_msg', `Item not found.`);
-            res.redirect("/salesPage");
-        }
-    })
+        req.flash('success_msg', `Item: ${itemName} removed`);
+        res.redirect("/salesPage");
+    }else{
+        req.flash('failure_msg', `Item not found.`);
+        res.redirect("/salesPage");
+    }
+})
+
+// Delete all listed items
+app.get("/clear", (req, res) => {
+
+    if(selectedItems.length > 0){
+        selectedItems = [];
+
+        req.flash('success_msg', 'List cleared');
+        res.redirect("/salesPage");
+    }else{
+        req.flash('failure_msg', `List is already empty`);
+        res.redirect("/salesPage");
+    }
 })
 
 //********Register new / Edit user 
