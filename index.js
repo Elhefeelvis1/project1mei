@@ -178,6 +178,14 @@ app.post("/selectItem", (req, res) => {
     }
 })
 
+// Save Sale
+app.get("/saveSales", (req, res) => {
+    const userId = req.user.id;
+    const itemList = selectedItems;
+
+    console.log(sales.saveSale(userId, itemList, db, res));
+})
+
 // Delete an item
 app.post("/removeItem", (req, res) => {
     const id = req.body.id;
