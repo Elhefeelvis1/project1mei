@@ -1,4 +1,3 @@
--- Already created table start
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL,
@@ -61,25 +60,21 @@ CREATE TABLE customers (
     address TEXT,
     email TEXT
 )
--- Already created table end
 
--- From chatgpt
 CREATE TABLE all_stocks (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     generic_name TEXT,
-    serial_number TEXT UNIQUE, -- Unique identifier for the product TYPE (e.g., SKU, UPC)
-    unit_selling_price DECIMAL(10, 2) NOT NULL, -- Current standard selling price
+    serial_number TEXT UNIQUE,
+    unit_selling_price DECIMAL(10, 2) NOT NULL,
     reorder_level INTEGER NOT NULL,
     description TEXT,
-
-    -- COLUMN FOR DENORMALIZED TOTAL QUANTITY
-    total_quantity_in_stock INTEGER NOT NULL DEFAULT 0 CHECK (total_quantity_in_stock >= 0),
+    total_quantity_in_stock INTEGER NOT NULL DEFAULT 0 CHECK (total_quantity_in_stock >= 0), --calculates total quantity of a product in all lots
     
     -- Audit fields
     entry_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    user_id INTEGER NOT NULL, -- User who last updated this product's definition
+    user_id INTEGER NOT NULL,
     
     -- Foreign Keys
     unit_id INTEGER NOT NULL,
@@ -175,13 +170,13 @@ CREATE TABLE stock_lots (
 -- Records historical purchase transactions.
 CREATE TABLE purchases (
     id SERIAL PRIMARY KEY,
-    product_id INTEGER NOT NULL, -- What product was purchased
-    lot_id INTEGER NOT NULL, -- Which specific lot this purchase contributed to
+    product_id INTEGER NOT NULL,
+    lot_id INTEGER NOT NULL,
     quantity_purchased INTEGER NOT NULL,
-    purchase_price_per_unit DECIMAL(10, 2) NOT NULL, -- Cost at time of this purchase
+    purchase_price_per_unit DECIMAL(10, 2) NOT NULL,
     purchase_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     supplier_id INTEGER,
-    user_id INTEGER NOT NULL, -- User who recorded the purchase
+    user_id INTEGER NOT NULL,
 
     CONSTRAINT fk_product_purchase
         FOREIGN KEY (product_id) REFERENCES all_stocks (id)
@@ -205,7 +200,7 @@ CREATE TABLE purchases (
 CREATE TABLE sales (
     id SERIAL PRIMARY KEY,
     sale_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    total_amount DECIMAL(10, 2) NOT NULL, -- Sum of all line items
+    total_amount DECIMAL(10, 2) NOT NULL,
     customer_name TEXT, -- Or link to a 'customers' table
     user_id INTEGER NOT NULL, -- User who recorded the sale
 
@@ -219,11 +214,11 @@ CREATE TABLE sales (
 CREATE TABLE sale_line_items (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL,
-    product_id INTEGER NOT NULL, -- What product was sold
+    product_id INTEGER NOT NULL,
     lot_id INTEGER NOT NULL, -- **Crucial: Which specific lot this item came from**
     quantity_sold INTEGER NOT NULL CHECK (quantity_sold > 0),
-    selling_price_per_unit DECIMAL(10, 2) NOT NULL, -- Price at which this specific item was sold
-    cost_at_sale DECIMAL(10, 2) NOT NULL, -- Cost of this item *at the time of sale* (from stock_lots)
+    selling_price_per_unit DECIMAL(10, 2) NOT NULL,
+    cost_at_sale DECIMAL(10, 2) NOT NULL, --individual cost at the time of sale
 
     CONSTRAINT fk_sale_header
         FOREIGN KEY (sale_id) REFERENCES sales (id)
@@ -235,12 +230,11 @@ CREATE TABLE sale_line_items (
 
     CONSTRAINT fk_lot_sold
         FOREIGN KEY (lot_id) REFERENCES stock_lots (lot_id)
-        ON UPDATE CASCADE ON DELETE RESTRICT -- Don't delete a lot if items from it have been sold
+        ON UPDATE CASCADE ON DELETE RESTRICT
 );
 
 
 -- stock_changes Table (Audit Log of All Stock Movements)
--- Now tracks both product and lot for granularity, and quantity/value impact.
 CREATE TABLE stock_changes (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL,
@@ -261,97 +255,4 @@ CREATE TABLE stock_changes (
     CONSTRAINT fk_user_change
         FOREIGN KEY (user_id) REFERENCES users (id)
         ON UPDATE CASCADE ON DELETE RESTRICT
-);
-
--- Chatgpt ends
-
-CREATE TABLE all_stocks (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    generic_name TEXT,
-    serial_number TEXT,
-    unit_cost DECIMAL(10, 2) NOT NULL,
-    unit_selling_price DECIMAL(10, 2) NOT NULL,
-    unit_quantity_in_stock INTEGER NOT NULL,
-    unit_id INTEGER NOT NULL,
-    company_id INTEGER,
-    category_id INTEGER DEFAULT 0,
-    reorder_level INTEGER NOT NULL,
-    expiry_date DATE NOT NULL,
-    entry_date DATE NOT NULL,
-    last_updated_date DATE NOT NULL,
-    description TEXT,
-    user_id INTEGER NOT NULL,
-
-    UNIQUE (serial_number),
-
-    CONSTRAINT fk_user_id
-        FOREIGN KEY (user_id)
-        REFERENCES users (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-
-    CONSTRAINT fk_unit_id
-        FOREIGN KEY (unit_id)
-        REFERENCES units (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-
-    CONSTRAINT fk_category_id
-        FOREIGN KEY (category_id)
-        REFERENCES categories (id)
-        ON UPDATE CASCADE
-        ON DELETE SET DEFAULT,
-
-    CONSTRAINT fk_company_id
-        FOREIGN KEY (company_id)
-        REFERENCES companies (id)
-        ON UPDATE CASCADE
-        ON DELETE SET DEFAULT
-
-);
-
-CREATE TABLE purchases(
-    id SERIAL PRIMARY KEY,
-    item_id INTEGER,
-    unit_cost DECIMAL(10, 2) NOT NULL,
-    unit_selling_price DECIMAL(10, 2) NOT NULL,
-    unit_quantity INTEGER NOT NULL,
-    new_expiry_date DATE NOT NULL,
-    purchase_date DATE NOT NULL,
-    supplier_id INTEGER,
-    user_id INTEGER NOT NULL,
-
-    CONSTRAINT fk_item_id
-        FOREIGN KEY (item_id)
-        REFERENCES all_stocks (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-
-    CONSTRAINT fk_user_id
-        FOREIGN KEY (user_id)
-        REFERENCES users (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-
-    CONSTRAINT fk_supplier_id
-        FOREIGN KEY (supplier_id)
-        REFERENCES suppliers (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
-);
-
-CREATE TABLE stock_changes (
-    id SERIAL PRIMARY KEY,
-    item_id INTEGER,
-    payment_method TEXT,
-    type TEXT NOT NULL,
-    change_date DATE NOT NULL,
-    user_id INTEGER NOT NULL,
-
-    CONSTRAINT fk_item_id
-        FOREIGN KEY (item_id)
-        REFERENCES all_stocks (id)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
 );

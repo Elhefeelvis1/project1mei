@@ -95,8 +95,11 @@
             <% } %>
             <div class="buttons">
                 <div class="sales">
-                    <a href="/saveSales">Save <i class="fa-solid fa-save"></i></a>
-                    <a href="/saveSales" onclick="window.print()">Save & Print <i class="fa-solid fa-print"></i></a>
+                    <form id="saveSales" action="/saveSales" method="post">
+                        <input type="hidden" name="arrayData" class="arrayInput">
+                        <button class="save-sales" onclick="quantityArr(false)">Save <i class="fa-solid fa-save"></i></button>
+                        <button class="save-sales" onclick="quantityArr(true)">Save & Print <i class="fa-solid fa-print"></i></button>
+                    </form>
                 </div>
                 <div class="clear">
                     <a href="/clear">Clear all <i class="fa-solid fa-trash"></i></a>
@@ -110,41 +113,7 @@
             <p>Powered by Mmaduabuchi</p>
         </div>
     </footer>
-    <script>
-        // Select all rows that contain an item calculation
-        const itemRows = document.querySelectorAll('.item-row');
-
-        // Loop through each item row
-        itemRows.forEach(row => {
-            // Get references to the elements WITHIN THE CURRENT ROW
-            const priceCell = row.querySelector('.item-price'); // This is your <td> with the price
-            const quantityInput = row.querySelector('.item-quantity'); // This is the input for quantity
-            const totalCell = row.querySelector('.item-total');     // This is the <td> to display the row total
-
-            // Function to calculate and display the total for THIS SPECIFIC ROW
-            function calculateRowTotal() {
-                // Get the fixed cost from the <td>'s text content
-                const cost = parseFloat(priceCell.textContent);
-                
-                // Get the editable quantity from the input's value
-                const quantity = parseInt(quantityInput.value);
-
-                // Check if inputs are valid numbers
-                if (!isNaN(cost) && !isNaN(quantity)) {
-                    const rowTotal = cost * quantity;
-                    totalCell.textContent = rowTotal.toFixed(2); // Display with 2 decimal places
-                } else {
-                    totalCell.textContent = 'Invalid input';
-                }
-            }
-
-            // Add event listener ONLY to the quantity input for THIS SPECIFIC ROW
-            quantityInput.addEventListener('input', calculateRowTotal);
-
-            // Initial calculation when the page loads for THIS SPECIFIC ROW
-            calculateRowTotal();
-        });
-    </script>
+    <script src="../public/dom/salesDOM.JS"></script>
 </body>
 </html>
 <%- include("./partials/footer.ejs") %>

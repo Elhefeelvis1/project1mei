@@ -169,7 +169,6 @@ app.post("/selectItem", (req, res) => {
         }
 
         selectedItems.push(itemObject);
-        console.log(selectedItems)
         req.flash('success_msg', `Item: ${itemName} added`);
         res.redirect("/salesPage");
     }else{
@@ -179,11 +178,15 @@ app.post("/selectItem", (req, res) => {
 })
 
 // Save Sale
-app.get("/saveSales", (req, res) => {
+app.post("/saveSales", (req, res) => {
     const userId = req.user.id;
-    const itemList = selectedItems;
+    const arr = JSON.parse(req.body.arrayData);
 
-    console.log(sales.saveSale(userId, itemList, db, res));
+    selectedItems.forEach((item, index) => {
+        item.quantity = arr[index]
+    })
+
+    console.log(sales.saveSale(userId, selectedItems, db, res));
 })
 
 // Delete an item
