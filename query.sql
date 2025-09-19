@@ -38,7 +38,9 @@ CREATE TABLE companies (
 -- Insert default 'Unknown Company' for FK SET DEFAULT
 INSERT INTO companies (id, name) VALUES (0, 'Unknown Company');
 
+-- Queried in SQL
 
+-- Expenses Table
 CREATE TABLE expenses(
     id SERIAL PRIMARY KEY,
     amount DECIMAL(10, 2) NOT NULL,
@@ -51,7 +53,7 @@ CREATE TABLE expenses(
         REFERENCES users (id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-)
+);
 
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
@@ -59,7 +61,7 @@ CREATE TABLE customers (
     phone_number INT,
     address TEXT,
     email TEXT
-)
+);
 
 CREATE TABLE all_stocks (
     id SERIAL PRIMARY KEY,
@@ -97,56 +99,6 @@ CREATE TABLE all_stocks (
         FOREIGN KEY (company_id) REFERENCES companies (id)
         ON UPDATE CASCADE ON DELETE SET DEFAULT
 );
-
--- Function to update total_quantity_in_stock after INSERT, UPDATE, or DELETE on stock_lots
-CREATE OR REPLACE FUNCTION update_all_stocks_total_quantity()
-RETURNS TRIGGER AS $$
-BEGIN
-    -- For INSERT or UPDATE:
-    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
-        UPDATE all_stocks
-        SET total_quantity_in_stock = (
-            SELECT COALESCE(SUM(quantity_in_lot), 0)
-            FROM stock_lots
-            WHERE product_id = NEW.product_id
-        )
-        WHERE id = NEW.product_id;
-        RETURN NEW;
-    END IF;
-
-    -- For DELETE:
-    IF (TG_OP = 'DELETE') THEN
-        UPDATE all_stocks
-        SET total_quantity_in_stock = (
-            SELECT COALESCE(SUM(quantity_in_lot), 0)
-            FROM stock_lots
-            WHERE product_id = OLD.product_id
-        )
-        WHERE id = OLD.product_id;
-        RETURN OLD;
-    END IF;
-
-    RETURN NULL; -- Should not be reached
-END;
-$$ LANGUAGE plpgsql;
-
--- Trigger for INSERTs on stock_lots
-CREATE TRIGGER trg_update_all_stocks_total_on_insert
-AFTER INSERT ON stock_lots
-FOR EACH ROW
-EXECUTE FUNCTION update_all_stocks_total_quantity();
-
--- Trigger for UPDATEs on stock_lots (specifically when quantity_in_lot changes)
-CREATE TRIGGER trg_update_all_stocks_total_on_update
-AFTER UPDATE OF quantity_in_lot ON stock_lots
-FOR EACH ROW
-EXECUTE FUNCTION update_all_stocks_total_quantity();
-
--- Trigger for DELETEs on stock_lots
-CREATE TRIGGER trg_update_all_stocks_total_on_delete
-AFTER DELETE ON stock_lots
-FOR EACH ROW
-EXECUTE FUNCTION update_all_stocks_total_quantity();
 
 -- stock_lots Table (Individual Batches of Stock)
 -- This table tracks the actual physical inventory in distinct batches.
@@ -256,3 +208,53 @@ CREATE TABLE stock_changes (
         FOREIGN KEY (user_id) REFERENCES users (id)
         ON UPDATE CASCADE ON DELETE RESTRICT
 );
+
+-- Function to update total_quantity_in_stock after INSERT, UPDATE, or DELETE on stock_lots
+CREATE OR REPLACE FUNCTION update_all_stocks_total_quantity()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- For INSERT or UPDATE:
+    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
+        UPDATE all_stocks
+        SET total_quantity_in_stock = (
+            SELECT COALESCE(SUM(quantity_in_lot), 0)
+            FROM stock_lots
+            WHERE product_id = NEW.product_id
+        )
+        WHERE id = NEW.product_id;
+        RETURN NEW;
+    END IF;
+
+    -- For DELETE:
+    IF (TG_OP = 'DELETE') THEN
+        UPDATE all_stocks
+        SET total_quantity_in_stock = (
+            SELECT COALESCE(SUM(quantity_in_lot), 0)
+            FROM stock_lots
+            WHERE product_id = OLD.product_id
+        )
+        WHERE id = OLD.product_id;
+        RETURN OLD;
+    END IF;
+
+    RETURN NULL; -- Should not be reached
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for INSERTs on stock_lots
+CREATE TRIGGER trg_update_all_stocks_total_on_insert
+AFTER INSERT ON stock_lots
+FOR EACH ROW
+EXECUTE FUNCTION update_all_stocks_total_quantity();
+
+-- Trigger for UPDATEs on stock_lots (specifically when quantity_in_lot changes)
+CREATE TRIGGER trg_update_all_stocks_total_on_update
+AFTER UPDATE OF quantity_in_lot ON stock_lots
+FOR EACH ROW
+EXECUTE FUNCTION update_all_stocks_total_quantity();
+
+-- Trigger for DELETEs on stock_lots
+CREATE TRIGGER trg_update_all_stocks_total_on_delete
+AFTER DELETE ON stock_lots
+FOR EACH ROW
+EXECUTE FUNCTION update_all_stocks_total_quantity();

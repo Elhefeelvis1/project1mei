@@ -12,22 +12,25 @@
         <div class="nav">
             <nav>
                 <div class="devLogo"></div>
-                <div class="login">
-                    <div class="adminLogin">
-                        <a href="/adminLogin">Admin Login</a>
-                    </div>
-                    <div class="salesLogin">
-                        <a href="/salesLogin">Sales Login</a>
-                    </div>
-                </div>
                 <div class="links">
                     <a href="/">Home</a>
                     <a href="/salesPage">Sales</a>
                 </div>
-                <div class="welcome">
-                    <p><i class="fa-solid fa-user"></i>: <%= locals.username ? username.username : "" %></p>
-                    <a href="/logout">Logout <i class="fas fa-right-from-bracket"></i></a>
-                </div>
+                <% if(locals.user) { %>
+                    <div class="welcome">
+                        <p><i class="fa-solid fa-user"></i>: <%= user.username%></p>
+                        <a href="/logout">Logout <i class="fas fa-right-from-bracket"></i></a>
+                    </div>
+                <% }else { %>
+                    <div class="login">
+                        <div class="adminLogin">
+                            <a href="/adminLogin">Admin Login</a>
+                        </div>
+                        <div class="salesLogin">
+                            <a href="/salesLogin">Sales Login</a>
+                        </div>
+                    </div>
+                <% } %>
             </nav>
         </div>
     </header>

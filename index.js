@@ -74,12 +74,14 @@ function editLabel(name, id, tableName, req, res){
 db.connect();
 
 app.get("/", (req, res) => {
-    res.render("index.ejs");
+    res.render("index.ejs", {
+        user: req.user
+    });
 });
 app.get("/salesPage", async (req, res) => {
     if(req.isAuthenticated()){
         const result = await db.query('SELECT name FROM categories')
-
+        
         categoryList = [];
         let categories = result.rows;
         categories.forEach((ctg) => {
@@ -87,7 +89,7 @@ app.get("/salesPage", async (req, res) => {
         });
 
         res.render("salesPage.ejs", {
-            username: req.user,
+            user: req.user,
             selectedItems: selectedItems,
             categories: categoryList
         });
@@ -96,11 +98,24 @@ app.get("/salesPage", async (req, res) => {
     }
 });
 app.get("/dashboard", async (req, res) => {
-    const userData = await db.query('SELECT * FROM users');
-    // console.log(userData)
-    res.render("dashboard.ejs", {
-        users: userData.rows
-    });
+    if(req.isAuthenticated()){
+        console.log(req.user)
+        if(req.user.role === "administrator"){
+            const userData = await db.query('SELECT * FROM users');
+
+            res.render("dashboard.ejs", {
+                user: req.user,
+                users: userData.rows
+            });
+        }
+        else{
+            res.render("saleslogin.ejs", {
+                errorMessage: "User not an Admin"
+            });
+        }
+    }else{
+        res.render("adminlogin.ejs");
+    }
 })
 // User log in
 app.get("/adminlogin", (req, res) => {
@@ -446,11 +461,27 @@ app.post("/addNewCompany", async (req, res) => {
     addLabel(name, 'companies', req, res);
 })
 
-app.post("/saleslogin", passport.authenticate("local", {
+app.post("/salesLogin", passport.authenticate("local", {
     successRedirect: "/salesPage",
-    failureRedirect: "/saleslogin",
+    failureRedirect: "/salesLogin",
     failureFlash: true   // Crucial: Pass the message from LocalStrategy to connect-flash
 }));
+app.post("/adminLogin", passport.authenticate("local", {
+    successRedirect: "/dashboard",
+    failureRedirect: "/adminlogin",
+    failureFlash: true   // Crucial: Pass the message from LocalStrategy to connect-flash
+}));
+
+// logout
+app.get("/logout", (req, res) => {
+    req.logout((err) => {
+        if(err){
+            console.log(err);
+        }else{
+            res.redirect("/salesLogin")
+        }
+    })
+})
 
 // Passport Authentication
 passport.use("local", new Strategy (async function verify(username, password, cb){
