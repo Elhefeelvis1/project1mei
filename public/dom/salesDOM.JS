@@ -1,44 +1,44 @@
-  // Select all rows that contain an item calculation
-  const itemRows = document.querySelectorAll('.item-row');
+// Select all rows that contain an item calculation
+const itemRows = document.querySelectorAll('.item-row');
 
-  function calculateAllRows(){
-      let total = 0;
+function calculateAllRows(){
+    let total = 0;
 
-      // Loop through each item row
-      itemRows.forEach(row => {
-          // Get references to the elements WITHIN THE CURRENT ROW
-          const priceCell = row.querySelector('.item-price'); // This is your <td> with the price
-          const quantityInput = row.querySelector('.item-quantity'); // This is the input for quantity
-          const totalCell = row.querySelector('.item-total');     // This is the <td> to display the row total
-          
-          // Get the fixed cost from the <td>'s text content
-          const cost = parseFloat(priceCell.textContent);
-          
-          // Get the editable quantity from the input's value
-          const quantity = parseInt(quantityInput.value);
+    // Loop through each item row
+    itemRows.forEach(row => {
+        // Get references to the elements WITHIN THE CURRENT ROW
+        const priceCell = row.querySelector('.item-price'); // This is your <td> with the price
+        const quantityInput = row.querySelector('.item-quantity'); // This is the input for quantity
+        const totalCell = row.querySelector('.item-total');     // This is the <td> to display the row total
+        
+        // Get the fixed cost from the <td>'s text content
+        const cost = parseFloat(priceCell.textContent);
+        
+        // Get the editable quantity from the input's value
+        const quantity = parseInt(quantityInput.value);
 
-          // Check if inputs are valid numbers
-          if (!isNaN(cost) && !isNaN(quantity)) {
-              const rowTotal = cost * quantity;
-              totalCell.textContent = rowTotal.toFixed(2); // Display with 2 decimal places
-              total += rowTotal;
-          } else {
-              totalCell.textContent = 'Invalid input';
-          }
-      });
-      console.log(total)
+        // Check if inputs are valid numbers
+        if (!isNaN(cost) && !isNaN(quantity)) {
+            const rowTotal = cost * quantity;
+            totalCell.textContent = rowTotal.toFixed(2); // Display with 2 decimal places
+            total += rowTotal;
+        } else {
+            totalCell.textContent = 'Invalid input';
+        }
+    });
+    console.log(total)
 
-      total = 0;
-  }
+    total = 0;
+}
 
-  calculateAllRows();
-  itemRows.forEach(row => {
-      const quantityInput = row.querySelector('.item-quantity');
-      if (quantityInput) {
-          // Correct: Pass the function reference, not the result of calling it
-          quantityInput.addEventListener('input', calculateAllRows);
-      }
-  });
+calculateAllRows();
+itemRows.forEach(row => {
+    const quantityInput = row.querySelector('.item-quantity');
+    if (quantityInput) {
+        // Correct: Pass the function reference, not the result of calling it
+        quantityInput.addEventListener('input', calculateAllRows);
+    }
+});
  
  // Initialize client-side cart array
  let selectedItems = []; // THIS IS NOW CLIENT-SIDE STATE!
