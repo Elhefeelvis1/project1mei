@@ -105,7 +105,14 @@ function addItemToCart(itemToAdd) {
         });
     }
     renderSelectedItems(); // Re-render the cart table
+
     // No need for req.flash or redirect here, it's all client-side feedback now
+}
+
+// Function to calculate grand total
+function calculateGrandTotal() {
+    let grandTotal = selectedItems.reduce((total, item) => total + (item.sellPrice * item.quantity), 0);
+    document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
 }
 
 // Function to render the selected items table

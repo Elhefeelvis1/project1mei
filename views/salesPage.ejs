@@ -79,18 +79,18 @@
                         <tr class="item-row">
                             <th scope="col"><%= index + 1 %></th>
                             <td><%= item.itemName %></td>
-                            <td><%= item.sellPrice %></td>
+                            <td class="item-price"><%= item.sellPrice %></td>
                             <td class="">
                                 <div class="input-group py-0">
                                     <div class="input-group-prepend">
                                       <span class="input-group-text bg-success">N</span>
                                     </div>
-                                    <input type="text" class="form-control border-dark" aria-label="Amount (to the nearest naira)">
+                                    <input type="text" class="form-control border-dark item-quantity" aria-label="Amount (to the nearest naira)">
                                 </div>
                             </td>
                             <td><%= item.unit %></td>
                             <td><%= item.category %></td>
-                            <td></td>
+                            <td class="item-total"></td>
                             <td class="text-center">
                                 <form action="/removeItem" method="post">
                                     <input type="hidden" name="id" value="<%= item.productId %>">
@@ -121,9 +121,9 @@
                     </div>
                     <div class="col-lg-4 text-end">
                         <div>
-                            <p>Total:</p>
-                            <p>Discount:</p>
-                            <p>Amount Payable:</p>
+                            <p>Total: <span id="grandTotal">0.00</span></p>
+                            <p>Discount: <span id="discountAmount">0.00</span></p>
+                            <p>Amount Payable: <span id="amountPayable">0.00</span></p>
                         </div>
                     </div>
                 </div>
