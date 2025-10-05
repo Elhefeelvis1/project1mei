@@ -29,181 +29,228 @@
                 </div>
             </div>
         </div>
-        <div>
-            <div class="flash-message">
-                <p class="success-msg"><%= success_msg %></p>
-                <p class="failure-msg"><%= failure_msg %></p>
-            </div>
-            <div class="body">
-                <div class="forms">
-                    <div class="dashboard-form users-form">
+        <div class="row bodyDiv justify-content-around">
+            <div class="col-lg-4">
+                <div class="flash-message">
+                    <p class="success-msg"><%= success_msg %></p>
+                    <p class="failure-msg"><%= failure_msg %></p>
+                </div>
+                <div class="updateForms">
+                    <div class="dashboardForm">
                         <h3 style="text-align: center;">Edit user</h3>
-                        <div class="edit">
+                        <div class="mb-4">
                             <% if(locals.users){ %>
-                                <form action="/editUser" method="post" id="editUserForm">
-                                    <label for="userEdit">Select the user to Edit</label>
-                                    <select name="userId" id="userEdit" required>
-                                        <option hidden disabled selected value>(select an option)</option>
+                                <form class="" action="/editUser" method="post" id="editUserForm">
+                                    <select class="form-control border-dark mb-2" name="userId" id="userEdit" required>
+                                        <option hidden disabled selected value>(Select User)</option>
                                       <% users.forEach(user => { %>
                                         <option value="<%= user.id %>" >
                                           <%= user.username %>
                                         </option>
                                       <% }); %>
                                     </select>
-                                    <input type="text" name="username" placeholder="Enter new username">
-                                    <input type="text" name="password" id="Enter new password">
-                                    <label for="change-role"></label>
-                                    <select name="role" id="change-role" required>
-                                        <option hidden disabled selected value>(select an option)</option>
+                                    <input class="form-control border-dark mb-2" type="text" name="username" placeholder="Enter new username">
+                                    <input class="form-control border-dark mb-2" type="text" name="password" placeholder="Enter new password">
+                                    <select class="form-control border-dark mb-3" name="role" id="change-role" required>
+                                        <option hidden disabled selected value>(Select Role)</option>
                                         <option value="sales">Sales Person</option>
                                         <option value="staff">Staff</option>
                                         <option value="manager">Manger</option>
                                         <option value="administrator">Administrator</option>
                                     </select>
-                                    <button type="submit">Update user</button>
+                                    <button class="btn btn-success" type="submit">Update user</button>
                                 </form>
                             <% } %>
                         </div>
                         <h3 style="text-align: center;">Add new user</h3>
                         <div class="addNew">
                             <form action="/registerUser" method="post">
-                                <input type="text" name="username" placeholder="Enter username">
-                                <input type="text" name="password" placeholder="Enter password">
-                                <label for="role"></label>
-                                <select name="role" id="role" required>
-                                    <option hidden disabled selected value>(select an option)</option>
+                                <input class="form-control border-dark mb-2" type="text" name="username" placeholder="Enter username">
+                                <input class="form-control border-dark mb-2" type="text" name="password" placeholder="Enter password">
+                                <select class="form-control border-dark mb-3" name="role" id="role" required>
+                                    <option hidden disabled selected value>(Select a Role)</option>
                                     <option value="sales">Sales Person</option>
                                     <option value="staff">Staff</option>
                                     <option value="manager">Manger</option>
                                     <option value="admin">Administrator</option>
                                 </select>
-                                <button type="submit">Add a new user <i class="fas fa-plus"></i></button>
+                                <button class="btn btn-success" type="submit">Add a new user <i class="fas fa-plus"></i></button>
                             </form>
                         </div>
                     </div>
-                    <div class="dashboard-form expenses hidden">
+                    <div class="expenses hidden dashboardForm" id="">
                         <h3 style="text-align: center;">Add new expense</h3>
                         <div class="addNew">
                             <form action="/addExpenses" method="post">
-                                <input type="number" name="amount" placeholder="Enter the amount">
-                                <input type="text" name="description" placeholder="Enter a description">
-                                <input type="number" name="userId">
-                                <button type="submit">Save Expense</button>
+                                <input class="form-control border-dark mb-2" type="number" name="amount" placeholder="Enter the amount" required>
+                                <input class="form-control border-dark mb-2" type="text" name="description" placeholder="Enter a description" required>
+                                <input type="hidden" class="form-control border-dark mb-3" type="number" name="userId" value=<%= locals.user && user.id %>>
+                                <button class="btn btn-success mb-2" type="submit">Save Expense</button>
                             </form>
                             <a href="/allExpenses">See all Expenses</a>
                         </div>
                     </div>
-                    <div class="dashboard-form customers-form hidden">
+                    <div class="customers-form hidden dashboardForm" id="">
                         <h3 style="text-align: center;">Edit Customer Details</h3>
                         <div class="edit">
                             <form action="/editCustomer" method="post">
-                                <select name="customerId" id="customer" required>
+                                <select class="form-control border-dark mb-2" name="customerId" id="customer" required>
                                     <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
-                                <input type="text" name="name" placeholder="Change the customer's name">
-                                <input type="number" name="phone" placeholder="Change the customer's Phone number">
-                                <input type="text" name="address" placeholder="Change the customer's address">
-                                <input type="email" name="email" placeholder="Change the customer's email">
-                                <button type="submit">Update</button>
+                                <input class="form-control border-dark mb-2" type="text" name="name" placeholder="Change the customer's name">
+                                <input class="form-control border-dark mb-2" type="number" name="phone" placeholder="Change the customer's Phone number">
+                                <input class="form-control border-dark mb-2" type="text" name="address" placeholder="Change the customer's address">
+                                <input class="form-control border-dark mb-3" type="email" name="email" placeholder="Change the customer's email">
+                                <button class="btn btn-success" type="submit">Update</button>
                             </form>
                         </div>
                         <h3 style="text-align: center;">Add new Customer</h3>
                         <div class="addNew">
                             <form action="/addNewCustomer" method="post">
-                                <input type="text" name="name" placeholder="Change the customer's name">
-                                <input type="number" name="phone" placeholder="Change the customer's Phone number">
-                                <input type="text" name="address" placeholder="Change the customer's address">
-                                <input type="email" name="email" placeholder="Change the customer's email">
-                                <button type="submit">Save</button>
+                                <input class="form-control border-dark mb-2" type="text" name="name" placeholder="Change the customer's name">
+                                <input class="form-control border-dark mb-2" type="number" name="phone" placeholder="Change the customer's Phone number">
+                                <input class="form-control border-dark mb-2" type="text" name="address" placeholder="Change the customer's address">
+                                <input class="form-control border-dark mb-3" type="email" name="email" placeholder="Change the customer's email">
+                                <button class="btn btn-success" type="submit">Save</button>
                             </form>
                         </div>
                     </div>
-                    <div class="dashboard-form units-form hidden">
+                    <div class="units-form hidden dashboardForm" id="">
                         <h3 style="text-align: center;">Edit Unit</h3>
                         <div class="edit">
                             <form action="/editUnit" method="post">
-                                <select name="unitId" id="unit" required>
+                                <select class="form-control border-dark mb-2" name="unitId" id="unit" required>
                                     <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
-                                <input type="text" name="unit" placeholder="Change the unit name">
-                                <button type="submit">Update</button>
+                                <input class="form-control border-dark mb-3" type="text" name="unit" placeholder="Change the unit name">
+                                <button class="btn btn-success" type="submit">Update</button>
                             </form>
                         </div>
                         <h3 style="text-align: center;">Add new Unit</h3>
                         <div class="addNew">
                             <form action="/addNewUnit" method="post">
-                                <input type="text" name="unit" placeholder="Enter new unit">
-                                <button type="submit">Save</button>
+                                <input class="form-control border-dark mb-3" type="text" name="unit" placeholder="Enter new unit">
+                                <button class="btn btn-success" type="submit">Save</button>
                             </form>
                         </div>
                     </div>
-                    <div class="dashboard-form categories-form hidden">
+                    <div class="categories-form hidden dashboardForm" id="">
                         <h3 style="text-align: center;">Edit Category</h3>
                         <div class="edit">
                             <form action="/editCategory" method="post">
-                                <select name="categoryId" id="category">
+                                <select class="form-control border-dark mb-2" name="categoryId" id="category">
                                     <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
-                                <input type="text" name="category" placeholder="Change the category name">
-                                <button type="submit">Update</button>
+                                <input class="form-control border-dark mb-3" type="text" name="category" placeholder="Change the category name">
+                                <button class="btn btn-success" type="submit">Update</button>
                             </form>
                         </div>
                         <h3 style="text-align: center;">Add new Category</h3>
                         <div class="addNew">
                             <form action="/addNewCategory" method="post">
-                                <input type="text" name="category" placeholder="Enter new category">
-                                <button type="submit">Save</button>
+                                <input class="form-control border-dark mb-3" type="text" name="category" placeholder="Enter new category">
+                                <button class="btn btn-success" type="submit">Save</button>
                             </form>
                         </div>
                     </div>
-                    <div class="dashboard-form suppliers-form hidden">
+                    <div class="suppliers-form hidden dashboardForm" id="">
                         <h3 style="text-align: center;">Edit Supplier</h3>
                         <div class="edit">
                             <form action="/editSupplier" method="post">
-                                <select name="supplierId" id="supplier">
+                                <select class="form-control border-dark mb-2" name="supplierId" id="supplier">
                                     <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
-                                <input type="text" name="supplier" placeholder="Change the supplier name">
-                                <button type="submit">Update</button>
+                                <input class="form-control border-dark mb-3" type="text" name="supplier" placeholder="Change the supplier name">
+                                <button class="btn btn-success" type="submit">Update</button>
                             </form>
                         </div>
                         <h3 style="text-align: center;">Add new Supplier</h3>
                         <div class="addNew">
                             <form action="/addNewSupplier" method="post">
-                                <input type="text" name="supplier" placeholder="Enter new supplier">
-                                <button type="submit">Save</button>
+                                <input class="form-control border-dark mb-3" type="text" name="supplier" placeholder="Enter new supplier">
+                                <button class="btn btn-success" type="submit">Save</button>
                             </form>
                         </div>
                     </div>
-                    <div class="dashboard-form companies-form hidden">
+                    <div class="companies-form hidden dashboardForm" id="">
                         <h3 style="text-align: center;">Edit Supplier</h3>
                         <div class="edit">
                             <form action="/editCompany" method="post">
-                                <select name="companyId" id="company">
+                                <select class="form-control border-dark mb-2" name="companyId" id="company">
                                     <option hidden disabled selected value>(select an option)</option>
                                     <option value="test">test</option>
                                 </select>
-                                <input type="text" name="company" placeholder="Change the company name">
-                                <button type="submit">Update</button>
+                                <input class="form-control border-dark mb-3" type="text" name="company" placeholder="Change the company name">
+                                <button class="btn btn-success" type="submit">Update</button>
                             </form>
                         </div>
                         <h3 style="text-align: center;">Add new Supplier</h3>
                         <div class="addNew">
                             <form action="/addNewCompany" method="post">
-                                <input type="text" name="company" placeholder="Enter new company">
-                                <button type="submit">Save</button>
+                                <input class="form-control border-dark mb-3" type="text" name="company" placeholder="Enter new company">
+                                <button class="btn btn-success" type="submit">Save</button>
                             </form>
                         </div>
                     </div>
                 </div>
-                <div class="data-display">
-    
+            </div>
+            <div class="col-lg-4 d-flex flex-column align-items-center">
+                <div class="row">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-header">
+                          Recent Transactions
+                        </div>
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">An item</li>
+                          <li class="list-group-item">A second item</li>
+                          <li class="list-group-item">A third item</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
+            <div class="col-lg-4">
+                <div class="row mb-2">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-header">
+                          Users
+                        </div>
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">An item</li>
+                          <li class="list-group-item">A second item</li>
+                          <li class="list-group-item">A third item</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-header">
+                          Debtors
+                        </div>
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">An item</li>
+                          <li class="list-group-item">A second item</li>
+                          <li class="list-group-item">A third item</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="card" style="width: 18rem;">
+                        <div class="card-header">
+                          Featured
+                        </div>
+                        <ul class="list-group list-group-flush">
+                          <li class="list-group-item">An item</li>
+                          <li class="list-group-item">A second item</li>
+                          <li class="list-group-item">A third item</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
         </div>
     </main>
 

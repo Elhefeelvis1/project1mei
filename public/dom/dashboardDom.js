@@ -1,8 +1,8 @@
-const dashboard_form = document.querySelectorAll('.dashboard-form');
-const dash_form_btn = document.querySelectorAll('.dash-form-btn');
-const users_form = document.querySelector('.users-form');
+const dashboard_form = document.querySelectorAll('.dashboardForm');
+const formBtn = document.querySelectorAll('.dash-form-btn');
 
-dash_form_btn.forEach((button, index) => {
+formBtn.forEach((button, index) => {
+    console.log("clicked");
     button.addEventListener('click', () => {
         console.log(button)
         dashboard_form.forEach(form => {

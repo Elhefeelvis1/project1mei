@@ -172,109 +172,106 @@
 
  // Search Form Submission
  document.getElementById('searchForm').addEventListener('submit', async (e) => {
-     e.preventDefault(); // Prevent default form submission (page reload)
+    e.preventDefault(); // Prevent default form submission (page reload)
 
-     const itemName = document.getElementById('itemName').value;
-     const category = document.getElementById('categorySelect').value;
-     const minPrice = document.getElementById('minPrice').value;
-     const maxPrice = document.getElementById('maxPrice').value;
+    const itemName = document.getElementById('itemName').value;
+    const category = document.getElementById('categorySelect').value;
+    const minPrice = document.getElementById('minPrice').value;
+    const maxPrice = document.getElementById('maxPrice').value;
 
-     // Construct query parameters
-     const queryParams = new URLSearchParams();
-     if (itemName) queryParams.append('itemName', itemName);
-     if (category) queryParams.append('category', category);
-     if (minPrice) queryParams.append('minPrice', minPrice);
-     if (maxPrice) queryParams.append('maxPrice', maxPrice);
+    // Construct query parameters
+    const queryParams = new URLSearchParams();
+    if (itemName) queryParams.append('itemName', itemName);
+    if (category) queryParams.append('category', category);
+    if (minPrice) queryParams.append('minPrice', minPrice);
+    if (maxPrice) queryParams.append('maxPrice', maxPrice);
 
-     try {
-         const response = await fetch(`/api/searchItems?${queryParams.toString()}`); // Use GET
-         const data = await response.json();
+    try {
+        const response = await fetch(`/api/searchItems?${queryParams.toString()}`); // Use GET
+        const data = await response.json();
 
-         if (!response.ok) {
-             console.error('Search error:', data.message);
-             // Display flash message equivalent
-             displayMessage('failure', data.message);
-             renderSearchResults([]); // Clear results or show error message
-             return;
-         }
+        if (!response.ok) {
+            console.error('Search error:', data.message);
+            // Display flash message equivalent
+            displayMessage('failure', data.message);
+            renderSearchResults([]); // Clear results or show error message
+            return;
+        }
 
-         if (data.contents && data.contents.length > 0) {
-             renderSearchResults(data.contents);
-             displayMessage('success', data.message);
-         } else {
-             renderSearchResults([]);
-             displayMessage('failure', data.message);
-         }
+        if (data.contents && data.contents.length > 0) {
+            renderSearchResults(data.contents);
+            displayMessage('success', data.message);
+        } else {
+            renderSearchResults([]);
+            displayMessage('failure', data.message);
+        }
 
-     } catch (error) {
-         console.error('Network or parsing error:', error);
-         displayMessage('failure', `An error occurred during search: ${error.message}`);
-     }
- });
+    } catch (error) {
+        console.error('Network or parsing error:', error);
+        displayMessage('failure', `An error occurred during search: ${error.message}`);
+    }
+});
 
- // Finalize Sale Button Click
- document.getElementById('finalizeSaleButton').addEventListener('click', async () => {
-     if (selectedItems.length === 0) {
-         displayMessage('failure', 'Please select items to finalize sale.');
-         return;
-     }
+// Finalize Sale Button Click
+document.getElementById('saveSales').addEventListener('submit', async (e) => {
+    e.preventDefault(); // Prevent default form submission (page reload)
 
-     // Assuming userId and customerName are available from your EJS template or other means
-     // For now, let's hardcode userId and assume customerName input on the page
-     const userId = <%= JSON.stringify(username.id) %>; // Assuming req.user is an object with an 'id'
-     const customerNameInput = prompt("Please enter customer name:"); // Or use an input field
+    if (selectedItems.length === 0) {
+        displayMessage('failure', 'Please select items to finalize sale.');
+        return;
+    }
 
-     if (!customerNameInput) {
-         displayMessage('failure', 'Customer name is required to finalize sale.');
-         return;
-     }
+    const userId = window.userId;
 
-     const saleData = {
-         userId: userId,
-         customerName: customerNameInput,
-         items: selectedItems.map(item => ({
-             productId: item.productId,
-             quantity: item.quantity,
-             sellPrice: item.sellPrice
-         }))
-     };
+    console.log('User ID for sale:', userId);
+    // const customerNameInput = document.getElementById('customerName').value;
+    // customerName: (customerNameInput) ? customerNameInput : 'Walk-in Customer', // Optional customer name in saleData
 
-     try {
-         const response = await fetch('/process-sale', {
-             method: 'POST',
-             headers: {
-                 'Content-Type': 'application/json',
-             },
-             body: JSON.stringify(saleData)
-         });
+    const saleData = {
+        userId: userId,
+        items: selectedItems.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            sellPrice: item.sellPrice
+        }))
+    };
 
-         const data = await response.json();
+    try {
+        const response = await fetch('/process-sale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(saleData)
+        });
 
-         if (!response.ok) {
-             console.error('Sale failed:', data.message);
-             displayMessage('failure', data.message);
-         } else {
-             displayMessage('success', data.message + ` Sale ID: ${data.saleId}`);
-             selectedItems = []; // Clear the client-side cart
-             renderSelectedItems(); // Update the displayed cart
-             // Optionally re-search items to update stock quantities in search results
-             // document.getElementById('searchForm').requestSubmit();
-         }
+        const data = await response.json();
 
-     } catch (error) {
-         console.error('Network or parsing error during sale:', error);
-         displayMessage('failure', `An unexpected error occurred during sale: ${error.message}`);
-     }
- });
+        if (!response.ok) {
+            console.error('Sale failed:', data.message);
+            displayMessage('failure', data.message);
+        } else {
+            displayMessage('success', data.message + ` Sale ID: ${data.saleId}`);
+            selectedItems = []; // Clear the client-side cart
+            renderSelectedItems(); // Update the displayed cart
+            // Optionally re-search items to update stock quantities in search results
+            document.getElementById('searchForm').requestSubmit();
+        }
 
- // Helper to display messages (mimics flash messages visually)
- function displayMessage(type, msg) {
-     const alertDiv = document.createElement('div');
-     alertDiv.className = `alert ${type}`;
-     alertDiv.textContent = msg;
-     document.body.insertBefore(alertDiv, document.body.firstChild); // Insert at top
-     setTimeout(() => alertDiv.remove(), 5000); // Remove after 5 seconds
- }
+    } catch (error) {
+        console.error('Network or parsing error during sale:', error);
+        displayMessage('failure', `An unexpected error occurred during sale: ${error.message}`);
+    }
+});
 
- // Initial render of selected items when page loads
- document.addEventListener('DOMContentLoaded', renderSelectedItems);
+// Helper to display messages (mimics flash messages visually)
+function displayMessage(type, msg) {
+const alertDiv = document.createElement('div');
+alertDiv.className = `alert ${type}`;
+alertDiv.textContent = msg;
+document.body.insertBefore(alertDiv, document.body.firstChild); // Insert at top
+setTimeout(() => alertDiv.remove(), 5000); // Remove after 5 seconds
+}
+
+// Initial render of selected items when page loads
+document.addEventListener('DOMContentLoaded', renderSelectedItems);

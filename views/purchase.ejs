@@ -1,0 +1,100 @@
+<%- include("./partials/header.ejs") %>
+    <main class="salesMain">
+        <% if(success_msg !== "" || failure_msg !== ""){ %>
+        <div class="flash-message">
+            <p class="success-msg"><%= success_msg %></p>
+            <p class="failure-msg"><%= failure_msg %></p>
+        </div>
+        <% } %>
+        <div class="searchFilters mb-4">
+            <form class="bg-info" action="/searchItems" method="post">
+                <button class="btn btn-dark" type="submit">Search <i class="fa-solid fa-search"></i></button>
+                <input class="form-control border-dark" type="text" name="itemName" placeholder="Enter the item name">
+                <select class="form-control border-dark" name="category" id="">
+                    <option hidden disabled selected value>(Select a Category)</option>
+                    <% if(locals.categories){ %>
+                    <% categories.forEach((ctg) => { %>
+                    <option value="<%= ctg %>"><%= ctg %></option>
+                    <% }) %>
+                    <% } %>
+                </select>
+            </form>
+        </div>
+        <% if(locals.contents){ %>
+        <div class="searchTable">
+            <p>Select an item</p>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                    <th scope="col">Item Name</th>
+                    <th scope="col">Price</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% contents.forEach((content) => { %>
+                    <tr>
+                        <td>
+                            <form action="/selectItem" method="post">
+                                <input type="submit" value="<%= content.item_name %>">
+                                <input type="hidden" name="itemName" value="<%= content.item_name %>">
+                                <input type="hidden" name="sellPrice" value="<%= content.unit_selling_price %>">
+                                <input type="hidden" name="quantityInStock" value="<%= content.total_quantity_in_stock %>">
+                                <input type="hidden" name="unit" value="<%= content.unit_name %>">
+                                <input type="hidden" name="productId" value="<%= content.item_id %>">
+                                <input type="hidden" name="category" value="<%= content.category_name %>">
+                            </form>
+                        </td>
+                        <td>N<%= content.unit_selling_price %></td>
+                        <td><%= content.total_quantity_in_stock %></td>
+                        <td><%= content.unit_name %></td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <% } %>
+        <div class="item-list-table ">
+            <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                    <th scope="col" class="text-center">#</th>
+                    <th scope="col" class="col-lg-4">Item Name</th>
+                    <th scope="col">Cost</th>
+                    <th scope="col">Quantity</th>
+                    <th scope="col">Selling Price</th>
+                    <th scope="col">Unit</th>
+                    <th scope="col" class="col-lg-2">Exp. Date</th>
+                    <th scope="col" class="">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(locals.selectedItems){ %>
+                    <% selectedItems.map((item, index) => { %>
+                    <tr class="item-row">
+                        <th scope="col"><%= index + 1 %></th>
+                        <td><%= item.itemName %></td>
+                        <td><input type="number" class="form-control border-dark" required></td>
+                        <td>
+                            <input type="number" class="form-control border-dark" required>
+                        </td>
+                        <td><input type="text" class="form-control border-dark" value="item.sellPrice" required></td>
+                        <td><%= item.unit %></td>
+                        <td><input type="date" class="form-control border-dark" required></td>
+                        <td class="text-center">
+                            <form action="/removeItem" method="post">
+                                <input type="hidden" name="id" value="<%= item.productId %>">
+                                <button class="btn btn-danger" type="submit"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    <% }) %>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+
+    <%- include("./partials/footer.ejs") %>

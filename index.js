@@ -79,7 +79,7 @@ app.get("/", (req, res) => {
     });
 });
 app.get("/salesPage", async (req, res) => {
-    if(req.isAuthenticated()){
+    // if(req.isAuthenticated()){
         const result = await db.query('SELECT name FROM categories')
         
         categoryList = [];
@@ -93,29 +93,46 @@ app.get("/salesPage", async (req, res) => {
             selectedItems: selectedItems,
             categories: categoryList
         });
-    }else{
-        res.render("saleslogin.ejs");
-    }
+    // }else{
+//         res.render("saleslogin.ejs");
+//     }
 });
 app.get("/dashboard", async (req, res) => {
-    if(req.isAuthenticated()){
-        console.log(req.user)
-        if(req.user.role === "administrator"){
+    // if(req.isAuthenticated()){
+    //     console.log(req.user)
+    //     if(req.user.role === "administrator"){
             const userData = await db.query('SELECT * FROM users');
 
             res.render("dashboard.ejs", {
                 user: req.user,
                 users: userData.rows
             });
-        }
-        else{
-            res.render("saleslogin.ejs", {
-                errorMessage: "User not an Admin"
+    //     }
+    //     else{
+    //         res.render("saleslogin.ejs", {
+    //             errorMessage: "User not an Admin"
+    //         });
+    //     }
+    // }else{
+    //     res.render("adminlogin.ejs");
+    // }
+})
+app.get("/purchase", async (req, res) => {
+    // if(req.isAuthenticated()){
+    //     console.log(req.user)
+    //     if(req.user.role === "administrator"){
+            res.render("purchase.ejs", {
+                user: req.user,
             });
-        }
-    }else{
-        res.render("adminlogin.ejs");
-    }
+    //     }
+    //     else{
+    //         res.render("saleslogin.ejs", {
+    //             errorMessage: "User not an Admin"
+    //         });
+    //     }
+    // }else{
+    //     res.render("adminlogin.ejs");
+    // }
 })
 // User log in
 app.get("/adminlogin", (req, res) => {
@@ -172,7 +189,12 @@ app.post("/selectItem", (req, res) => {
     let unit = req.body.unit;
     let productId = req.body.productId;
     let category = req.body.category;
-
+    let alreadyExists = selectedItems.find(item => item.productId === productId);
+    if(alreadyExists){
+        req.flash('failure_msg', `Item: ${itemName} already added`);
+        res.redirect("/salesPage");
+        return;
+    }
     if(quantityInStock > 0){
         let itemObject = {
             productId: productId,
@@ -186,6 +208,7 @@ app.post("/selectItem", (req, res) => {
         selectedItems.push(itemObject);
         req.flash('success_msg', `Item: ${itemName} added`);
         res.redirect("/salesPage");
+        return;
     }else{
         req.flash('failure_msg', `Item: ${itemName} out of stock!!`);
         res.redirect("/salesPage");
@@ -193,16 +216,16 @@ app.post("/selectItem", (req, res) => {
 })
 
 // Save Sale
-app.post("/saveSales", (req, res) => {
-    const userId = req.user.id;
-    const arr = JSON.parse(req.body.arrayData);
+// app.post("/saveSales", (req, res) => {
+//     const userId = req.user.id;
+//     const arr = JSON.parse(req.body.arrayData);
 
-    selectedItems.forEach((item, index) => {
-        item.quantity = arr[index]
-    })
+//     selectedItems.forEach((item, index) => {
+//         item.quantity = arr[index]
+//     })
 
-    console.log(sales.saveSale(userId, selectedItems, db, res));
-})
+//     console.log(sales.saveSale(userId, selectedItems, db, res));
+// })
 
 // Delete an item
 app.post("/removeItem", (req, res) => {

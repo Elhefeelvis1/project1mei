@@ -1,5 +1,5 @@
 :root{
-    --white: #fff;
+    --white: #f1f1f1;
     --green: #1ed760;
     --black: #000;
 }
@@ -23,7 +23,7 @@ header nav{
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 25px;
+    padding: 10px 25px;
 }
 header nav div{
     display: flex;
@@ -156,7 +156,7 @@ footer a:hover{
 
 /*********************** Sales Pages ******************************/
 .salesMain{
-    padding: 30px 0;
+    /* padding: 30px 0; */
     margin-bottom: 150px;
 }
 .salesMain .searchFilters form{
@@ -167,16 +167,15 @@ footer a:hover{
     padding-left: 30px;
     background-color: var(--green);
 }
-.salesMain .searchFilters form input{
-    padding: 10px 5px;
-    border: none;
-}
 .salesMain .searchFilters form button{
-    padding: 10px;
+    padding: 10px 15px;
     color: var(--white);
     font-weight: 600;
     background-color: var(--black);
     border: none;
+}
+.salesMain .item-list-table{
+    padding: 0 10px;
 }
 .salesMain .previousSales{
     margin: 30px 0 30px 10px;
@@ -188,75 +187,6 @@ footer a:hover{
     font-weight: 600;
     transition: all ease 0.5s;
 }
-
-.salesMain .tableSection{
-    padding: 20px 10px 0;
-}
-.salesMain .tableSection table{
-    width: 100%;
-    border-collapse: collapse;
-}
-.salesMain .itemTable th{
-    background-color: var(--black);
-    color: var(--white);
-    padding: 15px;
-}
-.salesMain .itemTable td{
-    border: var(--black) 1px solid;
-    padding: 5px;
-}
-.salesMain .itemTable tr td:nth-child(3){
-    display: flex;
-    justify-content: center;
-}
-.salesMain .itemTable tr td:nth-child(6){
-    display: flex;
-    justify-content: center;
-}
-.salesMain .itemTable tr td:nth-child(3) input{
-    width: 50px;
-    font-size: larger;
-}
-.salesMain .itemTable .itemName{
-    width: 50%;
-}
-.salesMain .itemTable .category{
-    width: 25%;
-}
-.salesMain .itemTable .price{
-    width: 15%;
-}
-.salesMain .itemTable tr form button{
-    background-color: red;
-    border: none;
-    font-size: 15px;
-    padding: 5px 15px;
-}
-.salesMain .buttons{
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin-top: 25px;
-}
-.salesMain .buttons a{
-    padding: 15px 20px;
-    font-weight: 600;
-    transition: all ease 0.5s;
-}
-.salesMain .buttons .sales a:nth-child(1){
-    background-color: var(--green);
-    color: var(--black);
-    margin-right: 20px;
-}
-.salesMain .buttons .sales a:nth-child(2){
-    background-color: var(--black);
-    color: var(--white);
-}
-.salesMain .buttons .clear a{
-    background-color: red;
-    color: var(--black);
-}
-
 /********************** login **********************/
 .mainLogin{
     display: flex;
@@ -310,6 +240,7 @@ footer a:hover{
     position: fixed;
     top: 0;
     /* display: none; */
+    overflow-y:scroll;
 }
 .mainDashboard .sidebar input{
     width: 35px;
@@ -372,12 +303,10 @@ footer a:hover{
 .mainDashboard .sidebar .menubar{
     background-color: var(--black);
     width: 350px;
-    height: 100vh;
     padding: 20px 0;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 100dvh;
 }
 .mainDashboard .sidebar ul{
     display: block;
@@ -417,43 +346,10 @@ footer a:hover{
 i{
     font-style: normal;
 }
-
-.mainDashboard .body{
-    padding: 0 15px;
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.mainDashboard .body .forms{
-    width: 45%;
-    max-width: 350px;
-    padding: 0 15px;
-    background-color: aliceblue;
-    box-shadow: 0 0 5px 5px rgb(232, 232, 232);
-}
-.mainDashboard .body .dashboard-form form{
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-.mainDashboard .body .dashboard-form input{
-    padding: 10px;
-}
-
-.mainDashboard .body .dashboard-form button{
-    padding: 10px;
-    border: none;
-}
-
-.mainDashboard .body .dashboard-form .edit button{
-    background-color: var(--black);
-    color: var(--white);
-}
-
-.mainDashboard .body .dashboard-form .addNew button{
-    background-color: var(--green);
+.mainDashboard .bodyDiv{
+    width: calc(100vw - 350px);
+    position: fixed;
+    right: 0;
 }
 
 @media screen and (min-width: 850px) {
