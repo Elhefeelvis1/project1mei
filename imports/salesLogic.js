@@ -55,48 +55,45 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
 }
 
 // Function to record a sale
-export async function saveSale(user_id, saleList, discountType, discountValue, db, res){
+export async function saveSale(userId, saleData, db, res){
     try {
-        await db.query('BEGIN'); // Start a transaction
+        await db.query('BEGIN');
 
-        const userId = user_id;
-        const items = saleList;
-        // Discount variables
-        const type = discountType;
-        const value = parseFloat(discountValue) || 0; // Ensure value is a number, default to 0
-
+        const items = saleData.items;
+        const totalDiscountValue = parseFloat(saleData.totalDiscount) || 0; 
+        
+        // --- Initial Validation ---
         if (!userId || !Array.isArray(items) || items.length === 0) {
-            await db.query('ROLLBACK'); // Rollback the BEGIN if it happened
+            await db.query('ROLLBACK'); 
+
             return res.status(400).json({ message: 'Invalid sale data provided. User ID and items array are required.' });
         }
-        // Check for valid discount
-        if (value < 0 || (type === 'percentage' && value > 100)) {
+        
+        // Check for valid discount: it must not be negative.
+        if (totalDiscountValue < 0) {
             await db.query('ROLLBACK');
-            return res.status(400).json({ message: 'Invalid discount value provided.' });
+            return res.status(400).json({ message: 'Invalid discount value provided (cannot be negative).' });
         }
-
+        
+        // --- Sale Header Creation ---
         let totalSaleAmount = 0;
-        let totalDiscountApplied = 0; // variable to store the actual discount amount
 
-        // 1. Create the main sales record (the sale header) with a temporary total_amount of 0.00
         const saleResult = await db.query(
             `INSERT INTO sales (user_id, total_amount, discount_applied) VALUES ($1, $2, $3) RETURNING id;`,
-            [userId, 0.00, 0.00]
+            [userId, 0.00, 0.00] // Temporary 0.00 values
         );
         const saleId = saleResult.rows[0].id;
 
-        // Loop through each item (product and its total quantity to sell) received from the db
+        // --- Line Item Processing and Stock Update (FEFO) ---
         for (const item of items) {
             const { productId, quantity, sellPrice } = item;
 
-            // **Validation Improvement: Return 400 on invalid item data**
             if (quantity <= 0 || sellPrice < 0 || !productId) {
                 await db.query('ROLLBACK');
                 return res.status(400).json({ message: `Invalid data for sale item. Product ID: ${productId}, Quantity: ${quantity}, Price: ${sellPrice}.` });
             }
 
-            // ... (FEFO logic remains the same) ...
-
+            // FEFO logic to retrieve stock lots
             const availableLotsResult = await db.query(
                 `SELECT lot_id, quantity_in_lot, cost_per_unit, expiry_date
                  FROM stock_lots
@@ -105,9 +102,17 @@ export async function saveSale(user_id, saleList, discountType, discountValue, d
                 `,
                 [productId]
             );
+            // Calculate total available stock for the product
+            let currentTotalStock = 0;
+            availableLotsResult.rows.forEach(lot => {
+                currentTotalStock += lot.quantity_in_lot;
+            });
 
             let remainingToSell = quantity;
             let soldFromLots = [];
+
+            // Array to collect lot IDs and quantities for the SINGLE batched UPDATE query
+            const lotUpdates = []; 
 
             for (const lot of availableLotsResult.rows) {
                 if (remainingToSell <= 0) break;
@@ -115,11 +120,13 @@ export async function saveSale(user_id, saleList, discountType, discountValue, d
                 const quantityToSellFromLot = Math.min(remainingToSell, lot.quantity_in_lot);
 
                 if (quantityToSellFromLot > 0) {
-                    await db.query(
-                        `UPDATE stock_lots SET quantity_in_lot = quantity_in_lot - $1 WHERE lot_id = $2;`,
-                        [quantityToSellFromLot, lot.lot_id]
-                    );
+                    // 1. COLLECT: Store the required update details for later execution
+                    lotUpdates.push({
+                        lotId: lot.lot_id,
+                        quantity: quantityToSellFromLot,
+                    });
 
+                    // 2. TRACE: Populate soldFromLots for sale_line_items insertion
                     soldFromLots.push({
                         lotId: lot.lot_id,
                         quantity: quantityToSellFromLot,
@@ -131,19 +138,39 @@ export async function saveSale(user_id, saleList, discountType, discountValue, d
             }
 
             if (remainingToSell > 0) {
-                // **CRITICAL FIX: Don't throw a generic Error for insufficient stock.**
-                // Rollback and return a 400 Bad Request directly to the client.
+                // Insufficient stock rollback logic remains the same
                 await db.query('ROLLBACK');
                 return res.status(400).json({ 
                     message: `Insufficient stock for Product ID: ${productId}. Requested: ${quantity}, Remaining unfulfilled: ${remainingToSell}.` 
                 });
             }
 
-            // ... (Line item and stock change insertion logic remains the same) ...
+            // Perform a single, batched update for ALL affected lots for this product.
+
+            // 1. Build the dynamic CASE statement and WHERE clause list
+            const lotIds = lotUpdates.map(u => u.lotId);
+            let caseStatement = `CASE lot_id `;
             
+            lotUpdates.forEach(update => {
+                caseStatement += `WHEN ${update.lotId} THEN quantity_in_lot - ${update.quantity} `;
+            });
+            caseStatement += `ELSE quantity_in_lot END`;
+            
+            // 2. Execute the single batched query
+            if (lotIds.length > 0) {
+                await db.query(
+                    `UPDATE stock_lots
+                    SET quantity_in_lot = ${caseStatement}
+                    WHERE lot_id = ANY($1::int[]);`, // $1 is the array of lot IDs
+                    [lotIds] 
+                );
+            }
+            
+            // Insert into sale_line_items and stock_changes for each lot used
             for (const soldLot of soldFromLots) {
                 const lineItemCost = soldLot.quantity * soldLot.costPerUnit;
                 const lineItemSellingPrice = soldLot.quantity * sellPrice;
+                // Accumulate the Gross Total before any discount
                 totalSaleAmount += lineItemSellingPrice;
 
                 await db.query(
@@ -151,48 +178,42 @@ export async function saveSale(user_id, saleList, discountType, discountValue, d
                      VALUES ($1, $2, $3, $4, $5, $6);`,
                     [saleId, productId, soldLot.lotId, soldLot.quantity, sellPrice, lineItemCost]
                 );
-
-                await db.query(
-                    `INSERT INTO stock_changes (product_id, lot_id, change_type, quantity_change, cost_impact, user_id)
-                     VALUES ($1, $2, $3, $4, $5, $6);`,
-                    [productId, soldLot.lotId, 'Sales', -soldLot.quantity, -lineItemCost, userId]
-                );
             }
+            const newQuantity = currentTotalStock - quantity;
+            const lineItemCost = quantity * soldFromLots[0].costPerUnit; // Approximate cost impact using the first lot's cost
+            await db.query(
+                `INSERT INTO stock_changes (product_id, change_type, quantity_change, new_quantity_on_hand, cost_impact, user_id)
+                 VALUES ($1, $2, $3, $4, $5, $6);`,
+                [productId, 'Sales', -quantity, newQuantity, -lineItemCost, userId]
+            );
         }
+        // --- Discount Application ---
+        let discountToApply = totalDiscountValue;
 
-        // Gross Total (Total before discount) is stored in totalSaleAmount
-
-        // --- Discount Calculation ---
-        if (type === 'percentage' && value > 0) {
-            // Calculate the percentage discount
-            totalDiscountApplied = totalSaleAmount * (value / 100);
-
-        } else if (type === 'amount' && value > 0) {
-            // Apply the fixed monetary discount
-            totalDiscountApplied = value;
-            
-            // Ensure discount doesn't make the total negative
-            if (totalDiscountApplied > totalSaleAmount) {
-                totalDiscountApplied = totalSaleAmount;
-            }
+        // Ensure the applied discount doesn't exceed the gross total amount
+        if (discountToApply > totalSaleAmount) {
+             discountToApply = totalSaleAmount;
         }
 
         // Calculate the final net total
-        const finalNetSaleAmount = totalSaleAmount - totalDiscountApplied;
+        const finalNetSaleAmount = totalSaleAmount - discountToApply;
 
-        // 4. Update the `total_amount` and `discount_applied` in the main `sales` header record
+        // 4. Update the `total_amount` (NET) and `discount_applied` in the main `sales` header record
         await db.query(
             `UPDATE sales SET total_amount = $1, discount_applied = $2 WHERE id = $3;`,
-            [finalNetSaleAmount, totalDiscountApplied, saleId] // Note: total_amount is now the NET amount
+            [finalNetSaleAmount, discountToApply, saleId] 
         );
 
         await db.query('COMMIT');
-        res.status(200).json({ message: 'Sale processed successfully!', saleId: saleId });
+        
+        // Return only the necessary successful data.
+        return { saleId: saleId }; 
 
     } catch (error) {
-        // This catch block is now primarily for unexpected DB errors (e.g., connection lost, constraint violation)
+        // This catch block is now primarily for unexpected DB errors
         await db.query('ROLLBACK');
         console.error('Error processing sale (unexpected):', error.message || error);
-        res.status(500).json({ message: 'Failed to process sale due to an internal error', error: error.message || 'Unknown error' });
+        
+        throw new Error(`Failed to process sale due to an internal error, error: ${error.message || 'Unknown error'}`);
     }
 }

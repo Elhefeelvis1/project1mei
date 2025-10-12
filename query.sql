@@ -155,6 +155,7 @@ CREATE TABLE sales (
     total_amount DECIMAL(10, 2) NOT NULL,
     customer_name TEXT, -- Or link to a 'customers' table
     user_id INTEGER NOT NULL, -- User who recorded the sale
+    discount_applied INTEGER DEFAULT 0 CHECK (discount_applied >= 0),
 
     CONSTRAINT fk_user_sale
         FOREIGN KEY (user_id) REFERENCES users (id)
@@ -190,23 +191,31 @@ CREATE TABLE sale_line_items (
 CREATE TABLE stock_changes (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL,
-    lot_id INTEGER, -- NULLABLE: some changes might not be lot-specific (e.g., initial setup, overall adjustments)
-    change_type TEXT NOT NULL, -- e.g., 'purchase_in', 'sale_out', 'adjustment_in', 'adjustment_out', 'return_in', 'return_out', 'expiry_disposal'
-    quantity_change INTEGER NOT NULL, -- Positive for increase, negative for decrease
-    new_quantity_on_hand INTEGER,     -- Total quantity of THIS PRODUCT after the change (useful for quick reference)
-    cost_impact DECIMAL(10, 2),       -- Financial impact of this change
-    change_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    sale_id INTEGER, -- ADD THIS COLUMN: Nullable foreign key for sales transactions
+    
+    change_type TEXT NOT NULL,
+    quantity_change INTEGER NOT NULL,
+    
+    new_quantity_on_hand INTEGER, -- Renamed from new_quantity_on_hand to match function logic (or vice versa)
+    
+    cost_impact DECIMAL(10, 2),
+    change_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Renamed from created_at
     user_id INTEGER NOT NULL,
 
+    -- Foreign Keys
     CONSTRAINT fk_product_change
         FOREIGN KEY (product_id) REFERENCES all_stocks (id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT fk_lot_change
-        FOREIGN KEY (lot_id) REFERENCES stock_lots (lot_id)
-        ON UPDATE CASCADE ON DELETE RESTRICT,
+        
     CONSTRAINT fk_user_change
         FOREIGN KEY (user_id) REFERENCES users (id)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+
+    -- ADD THIS CONSTRAINT
+    CONSTRAINT fk_sale_change
+        FOREIGN KEY (sale_id) REFERENCES sales (id)
+        ON UPDATE CASCADE ON DELETE SET NULL 
 );
 
 -- Function to update total_quantity_in_stock after INSERT, UPDATE, or DELETE on stock_lots

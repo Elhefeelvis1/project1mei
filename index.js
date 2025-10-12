@@ -15,6 +15,8 @@ import * as userAuth from "./imports/login_register.js";
 import * as addEdit from "./imports/add_edit_labels.js";
 // Importing add/edit labels functions
 import * as sales from "./imports/salesLogic.js";
+// Importing checkTransaction function
+import checkTransaction from './imports/checkTransaction.js';
 
 
 const app = express();
@@ -22,6 +24,7 @@ const port = 3000;
 const saltRounds = 5;
 env.config();
 
+app.use(express.json()); // To parse JSON bodies
 app.use(express.urlencoded({extended: true}));
 app.use(express.static("public"));
 // Express Session
@@ -134,6 +137,23 @@ app.get("/purchase", async (req, res) => {
     //     res.render("adminlogin.ejs");
     // }
 })
+app.get("/transactions", async (req, res) => {
+    // if(req.isAuthenticated()){
+           const userData = await db.query('SELECT id, username FROM users');
+    //     if(req.user.role === "administrator"){
+            res.render("transactions.ejs", {
+                users: userData.rows,
+            });
+    //     }
+    //     else{
+    //         res.render("saleslogin.ejs", {
+    //             errorMessage: "User not an Admin"
+    //         });
+    //     }
+    // }else{
+    //     res.render("adminlogin.ejs");
+    // }
+})
 // User log in
 app.get("/adminlogin", (req, res) => {
     const errorMessage = req.flash('error');
@@ -153,109 +173,86 @@ app.get('/saleslogin', (req, res) => {
 
 // *********Sales processing
 // step 1: getting the list of items from a search
-app.post("/searchItems", async (req, res) => {
-    let itemName = req.body.itemName;
-    let category = req.body.category;
-    let minPrice = req.body.minPrice;
-    let maxPrice = req.body.maxPrice;
+app.get("/api/searchItems", async (req, res) => {
+    // 1. Read parameters from req.query (since frontend uses a GET request with query params)
+    let itemName = req.query.itemName;
+    let category = req.query.category;
+    let minPrice = req.query.minPrice;
+    let maxPrice = req.query.maxPrice;
 
     try{
+        // Execute the database search
         const data = await sales.searchDb(itemName, category, minPrice, maxPrice, db);
-
+        
         if(data.length > 0){
-            res.render('salesPage.ejs', 
-                {
-                    username: req.user,
-                    selectedItems: selectedItems,
-                    contents: data,
-                    categories: categoryList
-                }
-            )
-        }else{
-            req.flash('failure_msg', "Item not found, check the name!")
-            res.redirect("/salesPage");
+            // Success: Return the search results as JSON
+            res.json({
+                success: true,
+                message: `${data.length} item(s) found!`,
+                contents: data // The array of search results
+            });
+        } else {
+            // No results found: Return a failure message as JSON
+            res.status(404).json({  
+                success: false,
+                message: "Item not found, check the name or criteria!",
+                contents: []
+            });
         }
-    }catch(err){
+    } catch(err){
         console.error('Database query error:', err);
-        res.status(500).json({ error: `Couldn't search for item: ${err.message}` });
+        // Server error: Return a 500 status with an error message
+        res.status(500).json({ 
+            success: false,
+            message: `Couldn't search for item: ${err.message}`,
+            error: err.message 
+        });
     }
-})
-
-// step 2: storing selected items in a temporary array
-app.post("/selectItem", (req, res) => {
-    let itemName = req.body.itemName;
-    let sellPrice = req.body.sellPrice;
-    let quantityInStock = req.body.quantityInStock;
-    let unit = req.body.unit;
-    let productId = req.body.productId;
-    let category = req.body.category;
-    let alreadyExists = selectedItems.find(item => item.productId === productId);
-    if(alreadyExists){
-        req.flash('failure_msg', `Item: ${itemName} already added`);
-        res.redirect("/salesPage");
-        return;
-    }
-    if(quantityInStock > 0){
-        let itemObject = {
-            productId: productId,
-            itemName: itemName,
-            sellPrice: sellPrice,
-            quantity: 1,
-            unit: unit,
-            category: category
-        }
-
-        selectedItems.push(itemObject);
-        req.flash('success_msg', `Item: ${itemName} added`);
-        res.redirect("/salesPage");
-        return;
-    }else{
-        req.flash('failure_msg', `Item: ${itemName} out of stock!!`);
-        res.redirect("/salesPage");
-    }
-})
+});
 
 // Save Sale
-// app.post("/saveSales", (req, res) => {
-//     const userId = req.user.id;
-//     const arr = JSON.parse(req.body.arrayData);
+app.post("/api/process-sale", async (req, res) => {
+    // const userId = req.user.id;
+    const userId = 1; // Temporary hardcoded user ID for testing
 
-//     selectedItems.forEach((item, index) => {
-//         item.quantity = arr[index]
-//     })
+    const saleData = req.body;
 
-//     console.log(sales.saveSale(userId, selectedItems, db, res));
-// })
+    try {
+        const newSale = await sales.saveSale(userId, saleData, db, res); 
 
-// Delete an item
-app.post("/removeItem", (req, res) => {
-    const id = req.body.id;
-
-    const indexToRemove = selectedItems.findIndex(item => item.productId === id)
-    if(indexToRemove > -1){
-        const removedItem = selectedItems.splice(indexToRemove, 1);
-        const itemName = removedItem[0].itemName;
-
-        req.flash('success_msg', `Item: ${itemName} removed`);
-        res.redirect("/salesPage");
-    }else{
-        req.flash('failure_msg', `Item not found.`);
-        res.redirect("/salesPage");
+        if (newSale && newSale.saleId) { 
+            res.status(201).json({
+                success: true,
+                message: `Sale successfully processed!`,
+                contents: newSale
+            });
+        } else {
+            res.status(400).json({ 
+                success: false,
+                message: "Sale could not be saved. Invalid data or internal issue.",
+                contents: {}
+            });
+        }
+    } catch (err) {
+        console.error('Sale processing error:', err);
+       
+        res.status(500).json({ 
+            success: false,
+            message: `Failed to process sale: ${err.message}`,
+            error: err.message 
+        });
     }
-})
 
-// Delete all listed items
-app.get("/clear", (req, res) => {
+    // console.log(sales.saveSale(saleData)); 
+});
 
-    if(selectedItems.length > 0){
-        selectedItems = [];
+// ********Transaction checking
+app.post("/searchTransactions", async (req, res) => {
+    const { startDate, endDate, transactionType, userId } = req.body;
 
-        req.flash('success_msg', 'List cleared');
-        res.redirect("/salesPage");
-    }else{
-        req.flash('failure_msg', `List is already empty`);
-        res.redirect("/salesPage");
-    }
+    const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
+    console.log(data.rows);
+    return;
 })
 
 //********Register new / Edit user 

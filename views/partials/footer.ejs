@@ -1,16 +1,16 @@
-<footer>
-    <div class="links">
-        <a href="/home">Home</a>
-        <a href="/salesPage">Sales</a>
-    </div>
-    <div class="dev">
-        <p>Powered by ShopKeeper 👨‍💻</p>
-    </div>
-</footer>
-<script>
-    window.userId = <%= locals.user ? JSON.stringify(user.id) : 'null' %>;
-</script>
-<script src="../public/dom/salesDOM.JS"></script>
-<script src="assets/bootstrap/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <footer>
+        <div class="links">
+            <a href="/home">Home</a>
+            <a href="/salesPage">Sales</a>
+        </div>
+        <div class="dev">
+            <p>Powered by ShopKeeper 👨‍💻</p>
+        </div>
+    </footer>
+    <script>
+        window.userId = <%= locals.user ? JSON.stringify(user.id) : 'null' %>;
+    </script>
+    <script src="/dom/salesDOM.js"></script>
+    <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>
