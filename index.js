@@ -251,8 +251,31 @@ app.post("/searchTransactions", async (req, res) => {
     const { startDate, endDate, transactionType, userId } = req.body;
 
     const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
-    console.log(data.rows);
-    return;
+    
+    if(data.count){
+        const transactionsWithRevenue = data.transactions.map(transaction => {
+            if (transaction.change_type === 'Sales') {
+                const price = parseFloat(transaction.selling_price_per_unit);
+                // quantity_change is negative for sales, using Math.abs()
+                const quantity = Math.abs(transaction.quantity_change); 
+                
+                transaction.gross_revenue_impact = (price * quantity).toFixed(2);
+            } else {
+                transaction.gross_revenue_impact = null;
+            }
+            
+            // We can delete the temp field or keep it for debugging.
+            return transaction;
+        });
+        // res.render('transactions.ejs', {
+        //     contents: data.transactionsWithRevenue,
+        // })
+        console.log(transactionsWithRevenue);
+    }else{
+        // res.render('transactions.ejs', {
+        //     message: "No transactions found for this timeline"
+        // })
+    }
 })
 
 //********Register new / Edit user 

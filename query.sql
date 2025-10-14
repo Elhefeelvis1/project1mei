@@ -191,9 +191,7 @@ CREATE TABLE sale_line_items (
 CREATE TABLE stock_changes (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL,
-    
-    sale_id INTEGER, -- ADD THIS COLUMN: Nullable foreign key for sales transactions
-    
+        
     change_type TEXT NOT NULL,
     quantity_change INTEGER NOT NULL,
     
@@ -202,6 +200,8 @@ CREATE TABLE stock_changes (
     cost_impact DECIMAL(10, 2),
     change_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, -- Renamed from created_at
     user_id INTEGER NOT NULL,
+
+    sale_id INTEGER, -- ADD THIS COLUMN: Nullable foreign key for sales transactions
 
     -- Foreign Keys
     CONSTRAINT fk_product_change

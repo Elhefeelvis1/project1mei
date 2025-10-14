@@ -182,9 +182,9 @@ export async function saveSale(userId, saleData, db, res){
             const newQuantity = currentTotalStock - quantity;
             const lineItemCost = quantity * soldFromLots[0].costPerUnit; // Approximate cost impact using the first lot's cost
             await db.query(
-                `INSERT INTO stock_changes (product_id, change_type, quantity_change, new_quantity_on_hand, cost_impact, user_id)
-                 VALUES ($1, $2, $3, $4, $5, $6);`,
-                [productId, 'Sales', -quantity, newQuantity, -lineItemCost, userId]
+                `INSERT INTO stock_changes (product_id, change_type, quantity_change, new_quantity_on_hand, cost_impact, user_id, sale_id)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+                [productId, 'Sales', -quantity, newQuantity, -lineItemCost, userId, saleId]
             );
         }
         // --- Discount Application ---

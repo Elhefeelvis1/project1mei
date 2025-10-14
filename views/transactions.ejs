@@ -20,6 +20,7 @@
                     <label for="transactionType">Transaction Type:</label>
                     <select class="form-control border-dark" name="transactionType" id="transactionType">
                         <option hidden disabled selected value>(Select a Transaction type)</option>
+                        <option value="all">All Types</option>
                         <option value="Sale">Sale</option>
                         <option value="Return">Return</option>
                         <option value="Purchase">Purchase</option>
@@ -32,6 +33,7 @@
                     <label for="selectUser">User:</label>
                     <select class="form-control border-dark" name="userId" id="selectUser">
                         <option hidden disabled selected value>(Select a User)</option>
+                        <option value="all">All Users</option>
                         <% if(locals.users){ %>
                         <% users.forEach((user) => { %>
                         <option value="<%= user.id %>"><%= user.username %></option>
@@ -59,13 +61,13 @@
                   </tr>
                 </thead>
                 <tbody>
-                    <% if(locals.selectedItems){ %>
-                    <% selectedItems.map((item, index) => { %>
+                    <% if(locals.contents){ %>
+                    <% contents.map((content, index) => { %>
                     <tr class="item-row">
-                        <td><%= item.itemName %></td>
-                        <td><%= item.sellPrice %></td>
-                        <td><%= item.unit %></td>
-                        <td><%= item.category %></td>
+                        <td><%= content.product_name %></td>
+                        <td><%= content.change_type %></td>
+                        <td><%= content.quantity_change %></td>
+                        <td><%= content.category %></td>
                         <td></td>
                     </tr>
                     <% }) %>
