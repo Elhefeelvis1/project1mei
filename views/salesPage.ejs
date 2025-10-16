@@ -111,4 +111,19 @@
             </div>
         </div>
     </main>
-<%- include("./partials/footer.ejs") %>
+    <footer>
+        <div class="links">
+            <a href="/home">Home</a>
+            <a href="/salesPage">Sales</a>
+        </div>
+        <div class="dev">
+            <p>Powered by ShopKeeper 👨‍💻</p>
+        </div>
+    </footer>
+    <script>
+        window.userId = <%= locals.user ? JSON.stringify(user.id) : 'null' %>;
+    </script>
+    <script src="/dom/salesDOM.js"></script>
+    <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+</body>
+</html>

@@ -10,11 +10,11 @@
                 <button class="btn btn-dark col-2" type="submit">Search <i class="fa-solid fa-search"></i></button>
                 <div>
                     <label for="startDate">Start Date:</label>
-                    <input id="startDate" class="form-control border-dark" type="date" name="startDate">
+                    <input id="startDate" class="form-control border-dark" type="date" name="startDate" required>
                 </div>
                 <div>
                     <label for="endDate">End Date:</label>
-                    <input id="endDate" class="form-control border-dark" type="date" name="endDate">
+                    <input id="endDate" class="form-control border-dark" type="date" name="endDate" required>
                 </div>  
                 <div class="col-3">
                     <label for="transactionType">Transaction Type:</label>
@@ -48,14 +48,14 @@
                 <thead class="thead-dark">
                   <tr>
                     <th scope="col" class="col-lg-4">Item</th>
-                    <th scope="col">Trans.Type</th>
+                    <th scope="col" class="col-lg-1">Trans.Type</th>
                     <th scope="col" class="">Quantity</th>
                     <th scope="col">Unit Price</th>
-                    <th scope="col" class="col-lg-2">Total Price</th>
-                    <th scope="col" class="col-lg-1">Pay Route</th>
+                    <th scope="col" class="col-lg-1">Total Price</th>
+                    <th scope="col" class="">Discount</th>
+                    <th scope="col" class="">Pay Route</th>
                     <th scope="col" class="col-lg-1">Customer</th>
-                    <th scope="col" class="col-lg-1">Category</th>
-                    <th scope="col" class="col-lg-1">Unit</th>
+                    <th scope="col" class="">Unit</th>
                     <th scope="col" class="col-lg-1">Trans.Date</th>
                     <th scope="col" class="col-lg-1">User</th>
                   </tr>
@@ -67,13 +67,34 @@
                         <td><%= content.product_name %></td>
                         <td><%= content.change_type %></td>
                         <td><%= content.quantity_change %></td>
-                        <td><%= content.category %></td>
-                        <td></td>
+                        <td><%= content.selling_price_per_unit %></td>
+                        <td><%= content.gross_revenue_impact %></td>
+                        <td><%= content.sale_discount %></td>
+                        <td>Pay route</td>
+                        <td>Customer</td>
+                        <td>Unit</td>
+                        <td><%= new Date(content.transaction_date).toISOString().slice(0, 10) %></td>
+                        <td><%= content.transacted_by %></td>
                     </tr>
                     <% }) %>
+                    <% }else if(locals.message){ %>
+                        <tr>
+                            <td colspan="11" class="text-center"><%= message %></td>
+                        </tr>
                     <% } %>
                 </tbody>
             </table>
+            <div class="d-flex justify-content-around align-items-center bg-dark text-white p-3">
+                <% if(locals.totalSalesRevenue) { %>
+                <div>
+                    <p class="mb-0">Total Sales Revenue: <%= totalSalesRevenue %></p>
+                </div>
+                <div>
+                    <p class="mb-0">Total Discount Given: <%= totalDiscount %></p>
+                </div>
+                <% } %>
+                <div></div>
+            </div>
         </div>
     </main>
 

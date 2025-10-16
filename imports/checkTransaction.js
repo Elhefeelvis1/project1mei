@@ -1,6 +1,6 @@
 export default async function checkTransaction(startDate, endDate, transactionType, user, db, res) {
     if (!startDate || !endDate) {
-        return res.status(400).json({ message: 'Start date and end date are required.' });
+        return 'Start date and end date are required.';
     }
 
     const queryParts = [];
@@ -84,20 +84,13 @@ export default async function checkTransaction(startDate, endDate, transactionTy
         const result = await db.query(sqlQuery, params);
         
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'No transactions found for the specified criteria.' });
+            return 'No transactions found for the specified criteria.';
         }
 
-        return res.status(200).json({
-            message: 'Transactions retrieved successfully.',
-            count: result.rows.length,
-            transactions: result.rows
-        });
+        return result.rows;
         
     } catch (error) {
         console.error('Database Error during transaction search:', error.message || error);
-        return res.status(500).json({ 
-            message: 'Failed to retrieve transactions due to a server error.', 
-            error: error.message || 'Unknown error' 
-        });
+        return 'Failed to retrieve transactions due to a server error.';
     }
 } 

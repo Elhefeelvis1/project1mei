@@ -251,9 +251,9 @@ app.post("/searchTransactions", async (req, res) => {
     const { startDate, endDate, transactionType, userId } = req.body;
 
     const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
-    
-    if(data.count){
-        const transactionsWithRevenue = data.transactions.map(transaction => {
+
+    if(Array.isArray(data) && data.length > 0){
+        const transactionsWithRevenue = data.map(transaction => {
             if (transaction.change_type === 'Sales') {
                 const price = parseFloat(transaction.selling_price_per_unit);
                 // quantity_change is negative for sales, using Math.abs()
@@ -264,17 +264,31 @@ app.post("/searchTransactions", async (req, res) => {
                 transaction.gross_revenue_impact = null;
             }
             
-            // We can delete the temp field or keep it for debugging.
+            // We can delete the temp fie vbbvld or keep it for debugging.
             return transaction;
         });
-        // res.render('transactions.ejs', {
-        //     contents: data.transactionsWithRevenue,
-        // })
-        console.log(transactionsWithRevenue);
+
+        const totalSalesRevenue = transactionsWithRevenue.reduce((acc, curr) => {   
+            return acc + (parseFloat(curr.gross_revenue_impact) || 0);
+        }, 0);
+
+        const totalDiscount = transactionsWithRevenue.reduce((acc, curr) => {   
+            return acc + (parseFloat(curr.sale_discount) || 0);
+        }, 0);
+
+        res.render('transactions.ejs', {
+            contents: transactionsWithRevenue,
+            totalSalesRevenue: totalSalesRevenue.toFixed(2),
+            totalDiscount: totalDiscount.toFixed(2)
+        })
+    }else if(!Array.isArray(data)){
+        res.render('transactions.ejs', {
+            message: data
+        });
     }else{
-        // res.render('transactions.ejs', {
-        //     message: "No transactions found for this timeline"
-        // })
+        res.render('transactions.ejs', {
+            message: "No transactions found for this timeline"
+        });
     }
 })
 
