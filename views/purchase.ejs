@@ -65,7 +65,6 @@
                         <th scope="col" class="col-lg-1">Unit Price</th>
                         <th scope="col" class="col-lg-1">Exp. Date</th>
                         <th scope="col" class="col-lg-1">Unit</th>
-                        <th scope="col" class="col-lg-1">Category</th>
                         <th scope="col" class="col-lg-1">Actions</th>
                       </tr>
                     </thead>
@@ -73,11 +72,22 @@
                         <!-- the rest of the table is rendered dynamically -->
                     </tbody>
                 </table>
-                <div class="d-flex align-center justify-content-between bg-dark text-white p-3 mb-3">
+                <div class="d-flex align-center justify-content-around bg-dark text-white p-3 mb-3">
+                    <div>
+                        <label for="supplierSelect">Select the supplier</label>
+                        <select name="supplierId" id="supplierSelect" class="form-control">
+                            <option hidden disabled selected value>(Select Supplier)</option>
+                            <% if(locals.suppliers){ %>
+                            <% suppliers.forEach((supplier) => { %>
+                            <option value="<%= supplier.id %>"><%= supplier.name %></option>
+                            <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="col-lg-3">
+                        <p>Total Items: <span id="totalItems">0</span></p>
                     <div class="col-lg-3 text-end">
-                        <div>
-                            <p>Total Purchase: <span id="grandTotal">0.00</span></p>
-                        </div>
+                        <p>Total Purchase: <span id="grandTotal">0.00</span></p>
                     </div>
                 </div>
             </div>

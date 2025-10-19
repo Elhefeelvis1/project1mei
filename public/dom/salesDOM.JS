@@ -299,6 +299,7 @@ document.getElementById('saveSales').addEventListener('submit', async (e) => {
     const saleData = {
         items: selectedItems.map(item => ({
             productId: item.productId,
+            itemName: item.itemName,
             quantity: item.quantity,
             sellPrice: item.sellPrice
         })),

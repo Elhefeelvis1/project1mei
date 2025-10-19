@@ -1,6 +1,6 @@
 // Initialize client-side cart array
 let selectedItems = [];
-let grandTotal = 0;
+let totalCost = 0;
 
 // Function to render search results dynamically
 function renderSearchResults(items) {
@@ -55,12 +55,11 @@ function addToSelectedItems(itemToAdd) {
             productId: itemToAdd.item_id,
             itemName: itemToAdd.item_name,
             sellPrice: parseFloat(itemToAdd.unit_selling_price),
-            lastCostPrice: parseFloat(itemToAdd.last_cost_price), // Use last cost as default
+            lastCostPrice: parseFloat(itemToAdd.last_cost_price),
             newCostPrice: parseFloat(itemToAdd.last_cost_price),
             expiryDate: '',
             quantity: 1, // Start with 1
             unit: itemToAdd.unit_name,
-            category: itemToAdd.category_name
         });
     }
     renderSelectedItems(); // Re-render the cart table
@@ -76,8 +75,8 @@ function calculateUnitCost(totalCost, quantity) {
 function renderSelectedItems() {
     const tbody = document.getElementById('selectedItemsTable').querySelector('tbody');
     tbody.innerHTML = ''; 
-    
-    let grandTotal = 0; 
+    let grandTotal = 0;
+
 
     if (selectedItems.length === 0) {
         const row = tbody.insertRow();
@@ -99,13 +98,32 @@ function renderSelectedItems() {
         row.insertCell().textContent = index + 1;
 
         // 2. Item Name
-        row.insertCell().textContent = item.itemName;
-    
-        // 3. Quantity Input (Quantity Purchased)
+        row.insertCell().textContent = item.itemName; 
+
+        // 3. Total Cost Price Input (User enters the total line cost)
+        const totalCostCell = row.insertCell();
+        const totalCostInput = document.createElement('input');
+        totalCostInput.type = 'number';
+        totalCostInput.value = totalCost.toFixed(2);
+        totalCostInput.className = 'form-control item-new-cost';
+
+        totalCostInput.addEventListener('change', (e) => {
+            totalCost = parseFloat(e.target.value);
+            if(totalCost <= 0 || isNaN(totalCost)){
+                displayMessage('failure', "Total cost must be a positive number.");
+                e.target.value = 0;
+            }else{
+                // totalCost = parseFloat(e.target.value);
+                item.newCostPrice = calculateUnitCost(totalCost, item.quantity); 
+                renderSelectedItems(); 
+            }
+        });
+        totalCostCell.appendChild(totalCostInput);
+
+        // 4. Quantity Input (Quantity Purchased)
         const quantityCell = row.insertCell();
         const quantityInput = document.createElement('input');
         quantityInput.type = 'number';
-        quantityInput.min = '1';
         quantityInput.value = item.quantity;
         quantityInput.className = 'form-control item-quantity'; 
         
@@ -113,42 +131,20 @@ function renderSelectedItems() {
             const newQuantity = parseInt(e.target.value);
             if(newQuantity <= 0 || isNaN(newQuantity)){
                 displayMessage('failure', "Quantity must be a positive number.");
-                e.target.value = item.quantity;
+                e.target.value = 1;
             }else{
                 item.quantity = newQuantity;
+                item.newCostPrice = calculateUnitCost(totalCost, newQuantity);
                 renderSelectedItems(); 
             }
         });
-        quantityCell.appendChild(quantityInput); 
-
-        // 4. Total Cost Price Input (User enters the total line cost)
-        const totalCostCell = row.insertCell();
-        const totalCostInput = document.createElement('input');
-        totalCostInput.type = 'number';
-        totalCostInput.step = '0.01';
-        totalCostInput.value = lineTotal.toFixed(2); 
-        totalCostInput.className = 'form-control item-new-cost';
-
-        totalCostInput.addEventListener('change', (e) => {
-            const totalCost = parseFloat(e.target.value);
-            if(totalCost <= 0 || isNaN(totalCost)){
-                displayMessage('failure', "Total cost must be a positive number.");
-                e.target.value = (item.newCostPrice * item.quantity).toFixed(2);
-            }else{
-                // FIX 1: Calculate the unit cost and store that in the item object
-                item.newCostPrice = calculateUnitCost(totalCost, item.quantity); 
-                renderSelectedItems(); 
-            }
-        });
-        totalCostCell.appendChild(totalCostInput);
+        quantityCell.appendChild(quantityInput);
 
         // 5. Unit Cost Cell (calculated)
         const unitCostCell = row.insertCell();
-        const unitCostDisplay = document.createElement('span'); // Use span instead of read-only input for simpler display
-        // The item.newCostPrice already holds the unit cost (if Fix 1 is applied)
+        const unitCostDisplay = document.createElement('span');
         unitCostDisplay.textContent = item.newCostPrice.toFixed(2); 
         unitCostCell.appendChild(unitCostDisplay);
-        // Note: The previous logic of updating unitCostInput is removed since we use a span
 
         // 6. Last Cost Price (Reference)
         const lastCostCell = row.insertCell();
@@ -196,9 +192,6 @@ function renderSelectedItems() {
 
         // 9. Unit Column
         row.insertCell().textContent = item.unit || '';
-        
-        // 10. Category Column
-        row.insertCell().textContent = item.category || '';
 
         // 11. Actions Column (Remove Button)
         const actionCell = row.insertCell();
@@ -218,6 +211,7 @@ function renderSelectedItems() {
     });
 
     document.getElementById('grandTotal').textContent = grandTotal.toFixed(2);
+    document.getElementById('totalItems').textContent = selectedItems.length;
 }
 
 // Function to remove item from client-side cart
@@ -264,6 +258,7 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
             renderSearchResults([]); // Clear results or show error message
             return;
         }if (data.contents && data.contents.length > 0) {
+            console.log(data.contents);
             renderSearchResults(data.contents);
         } else {
             renderSearchResults([]);
@@ -298,12 +293,11 @@ document.getElementById('savePurchase').addEventListener('submit', async (e) => 
         items: selectedItems.map(item => ({
             productId: item.productId,
             quantity: item.quantity,
-            // newCostPrice holds the calculated UNIT COST (due to renderSelectedItems fix)
             unitCost: item.newCostPrice, 
-            unitSellPrice: item.sellPrice, // Send the new proposed selling price
+            unitSellPrice: item.sellPrice,
             expiryDate: item.expiryDate 
         })),
-        // Add supplier info or invoice number here if needed
+        supplierId: document.getElementById('supplierSelect').value || 0
     };
 
     try {

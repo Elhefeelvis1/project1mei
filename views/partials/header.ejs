@@ -17,12 +17,18 @@
                 <div class="links">
                     <a href="/">Home</a>
                     <a href="/salesPage">Sales</a>
+                    
                 </div>
                 <!-- <%# if(locals.user) { %>
                     <div class="welcome">
                         <p><i class="fa-solid fa-user"></i>: <%#= user.username%></p>
                         <a href="/logout">Logout <i class="fas fa-right-from-bracket"></i></a>
                     </div>
+                    <%# if(locals.user.role == "administrator"){ %>
+                        <div>
+                        <a href="/dashboard">Admin Dashboard</a>
+                    </div>
+                <%# } %>
                 <%# }else { %>
                     <div class="login">
                         <div class="adminLogin">

@@ -17,6 +17,8 @@ import * as addEdit from "./imports/add_edit_labels.js";
 import * as sales from "./imports/salesLogic.js";
 // Importing checkTransaction function
 import checkTransaction from './imports/checkTransaction.js';
+// importing addPurchase function
+import savePurchase from './imports/addPurchase.js';
 
 
 const app = express();
@@ -124,9 +126,20 @@ app.get("/purchase", async (req, res) => {
     // if(req.isAuthenticated()){
     //     console.log(req.user)
     //     if(req.user.role === "administrator"){
-            res.render("purchase.ejs", {
-                user: req.user,
-            });
+            try{
+                const result = await db.query('SELECT * FROM suppliers');
+                res.render("purchase.ejs", {
+                    user: req.user,
+                    suppliers: result.rows
+                });
+            }catch(err){
+                console.error('Database query error:', err);
+                res.status(500).json({
+                    success: false,
+                    message: `Couldn't retrieve suppliers: ${err.message}`,
+                    error: err.message
+                });
+            }
     //     }
     //     else{
     //         res.render("saleslogin.ejs", {
@@ -291,6 +304,38 @@ app.post("/searchTransactions", async (req, res) => {
         });
     }
 })
+
+app.post("/api/process-purchase", async (req, res) => {
+    // const userId = req.user.id;
+    const userId = 1; // Temporary hardcoded user ID for testing
+    const purchaseData = req.body;
+
+    try {
+        const newPurchase = await savePurchase(userId, purchaseData, db, res);
+
+        if (newPurchase && newPurchase.purchaseId) {
+            res.status(201).json({
+                success: true,
+                message: `Purchase successfully processed!`,
+                contents: newPurchase
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: "Purchase could not be saved. Invalid data or internal issue.",
+                contents: {}
+            });
+        }
+    } catch (err) {
+        console.error('Purchase processing error:', err);
+
+        res.status(500).json({
+            success: false,
+            message: `Failed to process purchase: ${err.message}`,
+            error: err.message
+        });
+    }
+});
 
 //********Register new / Edit user 
 app.post("/editUser", async (req, res) => {

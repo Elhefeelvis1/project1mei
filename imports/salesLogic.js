@@ -36,7 +36,7 @@ export async function searchDb(name, category, startPrice, stopPrice, db){
         console.warn(`searchDb: Invalid stopPrice input ignored: ${stopPrice}`);
     }
 
-    let sqlQuery = 'SELECT ast.id AS item_id, ast.name AS item_name, ast.unit_selling_price, ast.total_quantity_in_stock, categories.name AS category_name, units.name AS unit_name FROM all_stocks ast JOIN units ON ast.unit_id = units.id JOIN categories ON ast.category_id = categories.id';
+    let sqlQuery = 'SELECT ast.id AS item_id, ast.name AS item_name, ast.unit_selling_price, ast.total_quantity_in_stock, ast.last_cost_price, categories.name AS category_name, units.name AS unit_name FROM all_stocks ast JOIN units ON ast.unit_id = units.id JOIN categories ON ast.category_id = categories.id';
 
     if (queryParts.length > 0) {
         sqlQuery += ' WHERE ' + queryParts.join(' AND ');
@@ -198,16 +198,35 @@ export async function saveSale(userId, saleData, db, res){
         // Calculate the final net total
         const finalNetSaleAmount = totalSaleAmount - discountToApply;
 
-        // 4. Update the `total_amount` (NET) and `discount_applied` in the main `sales` header record
-        await db.query(
-            `UPDATE sales SET total_amount = $1, discount_applied = $2 WHERE id = $3;`,
+        const updatedSaleResult = await db.query(
+            `UPDATE sales 
+            SET total_amount = $1, discount_applied = $2 
+            WHERE id = $3
+            RETURNING id, user_id, total_amount, discount_applied, sale_date;`, // <-- Use RETURNING
             [finalNetSaleAmount, discountToApply, saleId] 
         );
 
+        const saleRecord = updatedSaleResult.rows[0];
+
+        const userResult = await db.query(
+            `SELECT username 
+            FROM users 
+            WHERE id = $1;`,
+            [saleRecord.user_id] 
+        );
+        const username = userResult.rows[0] ? userResult.rows[0].username : 'Unknown User';
+
         await db.query('COMMIT');
-        
-        // Return only the necessary successful data.
-        return { saleId: saleId }; 
+
+        // 6. Return the consolidated data
+        return { 
+            saleId: saleRecord.id,
+            username: username,
+            saleData: items,
+            totalAmount: parseFloat(saleRecord.total_amount).toFixed(2), // Net total
+            discountApplied: parseFloat(saleRecord.discount_applied).toFixed(2),
+            saleDate: saleRecord.sale_date,
+        };
 
     } catch (error) {
         // This catch block is now primarily for unexpected DB errors
