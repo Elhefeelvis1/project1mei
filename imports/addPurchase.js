@@ -4,8 +4,7 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         await db.query('BEGIN');
 
         const items = purchaseData.items;
-        // Purchase doesn't typically have a 'discount applied', but might have a global 'supplier_discount' or 'tax' field. 
-        // We'll skip complex global charges for this direct conversion and focus on item cost.
+        const supplierId = purchaseData.supplierId;
         
         // --- Initial Validation ---
         if (!userId || !Array.isArray(items) || items.length === 0) {
@@ -42,16 +41,16 @@ export default async function savePurchase(userId, purchaseData, db, res) {
 
             // 2. Insert into purchase_line_items
             const purchaseLineResult = await db.query(
-                `INSERT INTO purchase_line_items (purchase_id, product_id, quantity_purchased, cost_per_unit, selling_price_at_purchase)
-                 VALUES ($1, $2, $3, $4, $5) RETURNING id;`,
-                [purchaseId, productId, quantity, unitCost, unitSellPrice]
+                `INSERT INTO purchase_line_items (purchase_id, product_id, quantity_purchased, cost_per_unit)
+                 VALUES ($1, $2, $3, $4) RETURNING id;`,
+                [purchaseId, productId, quantity, unitCost]
             );
             const purchaseLineItemId = purchaseLineResult.rows[0].id;
 
             // 3. Create a NEW Stock Lot
             const lotResult = await db.query(
-                `INSERT INTO stock_lots (product_id, quantity_in_lot, cost_per_unit, expiry_date, entry_date, purchase_line_item_id)
-                 VALUES ($1, $2, $3, $4, NOW(), $5) RETURNING lot_id;`,
+                `INSERT INTO stock_lots (product_id, quantity_in_lot, cost_per_unit, expiry_date, purchase_line_item_id)
+                 VALUES ($1, $2, $3, $4, $5) RETURNING lot_id;`,
                 [productId, quantity, unitCost, expiryDate, purchaseLineItemId]
             );
             const newLotId = lotResult.rows[0].lot_id;
@@ -70,6 +69,11 @@ export default async function savePurchase(userId, purchaseData, db, res) {
                 [productId, 'Purchase', quantity, currentTotalStock, lineTotalCost, userId, purchaseId, newLotId]
             );
 
+            await db.query(
+                'UPDATE purchase_line_items SET lot_id = $1 WHERE id = $2',
+                [newLotId, purchaseLineItemId]
+            );
+
             // 5. Update Product Metadata (Last Cost and Selling Price)
             productUpdates.push({
                 productId: productId,
@@ -85,18 +89,18 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         // For simplicity here, we iterate and update:
         for (const update of productUpdates) {
              await db.query(
-                `UPDATE products SET 
-                 last_cost_price = $1, 
-                 unit_selling_price = $2 
-                 WHERE product_id = $3;`,
-                [update.unitCost, update.unitSellPrice, update.productId]
+                `UPDATE all_stocks SET 
+                 last_updated_date = NOW(), 
+                 unit_selling_price = $1 
+                 WHERE id = $2;`,
+                [update.unitSellPrice, update.productId]
             );
         }
 
         // --- Finalize Purchase Header ---
         await db.query(
-            `UPDATE purchases SET total_amount = $1 WHERE id = $2;`,
-            [totalPurchaseAmount, purchaseId]
+            `UPDATE purchases SET total_amount = $1, supplier_id = $2 WHERE id = $3;`,
+            [totalPurchaseAmount, supplierId, purchaseId]
         );
 
         await db.query('COMMIT');

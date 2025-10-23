@@ -168,7 +168,6 @@ footer p{
     gap: 10px;
     padding: 20px;
     padding-left: 30px;
-    background-color: var(--green);
 }
 .salesMain .searchFilters form button{
     padding: 10px 15px;
