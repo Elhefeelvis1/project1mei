@@ -1,6 +1,5 @@
 // Initialize client-side cart array
 let selectedItems = [];
-let totalCost = 0;
 
 // Search Form Submission Handler
 async function searchForm(event) {
@@ -45,16 +44,16 @@ async function saveQuery(event) {
 
     let processRoute;
     
-    if(event.target.action = "saveReturn"){
+    if(event.target.action === "saveReturn"){
         processRoute = "process-return"
     }
-    if (event.target.action = "saveDamaged"){
+    if (event.target.action === "saveDamaged"){
         processRoute = "process-damaged"
     }
-    if (event.target.action = "saveOfficeUse"){
+    if (event.target.action === "saveOfficeUse"){
         processRoute = "process-officeUse"
     }
-    if (event.target.action = "saveExpired"){
+    if (event.target.action === "saveExpired"){
         processRoute = "process-expired"
     }
 
@@ -176,6 +175,9 @@ function addToSelectedItems(itemToAdd) {
 function renderSelectedItems() {
     const tbody = document.getElementById('selectedItemsTable').querySelector('tbody');
     tbody.innerHTML = ''; 
+    let totalCost = 0;
+    let totalPrice = 0;
+
 
     if (selectedItems.length === 0) {
         const row = tbody.insertRow();
