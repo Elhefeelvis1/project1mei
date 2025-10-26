@@ -39,22 +39,21 @@ async function searchForm(event) {
 }
 
 // Save Return Handler
-async function saveQuery(event) {
+async function finalizeTransaction(event) {
     event.preventDefault();
 
-    let processRoute;
+    const routeMap = {
+        "saveReturn": "process-return",
+        "saveDamaged": "process-damaged",
+        "saveOfficeUse": "process-officeUse",
+        "saveExpired": "process-expired"
+    };
+    const formAction = event.target.action;
+    const processRoute = routeMap[formAction];
     
-    if(event.target.action === "saveReturn"){
-        processRoute = "process-return"
-    }
-    if (event.target.action === "saveDamaged"){
-        processRoute = "process-damaged"
-    }
-    if (event.target.action === "saveOfficeUse"){
-        processRoute = "process-officeUse"
-    }
-    if (event.target.action === "saveExpired"){
-        processRoute = "process-expired"
+    if (!processRoute) {
+        displayMessage('failure', 'Unknown form action. Cannot proceed.');
+        return;
     }
 
 
@@ -65,11 +64,11 @@ async function saveQuery(event) {
 
     // Validation: Check for required fields and positive values
     const validationFailed = selectedItems.some(item => 
-        !item.expiryDate || item.quantity <= 0 || item.newCostPrice <= 0 || item.sellPrice <= 0
+        item.quantity <= 0 || item.costPrice <= 0 || item.sellPrice <= 0
     );
     
     if(validationFailed) {
-        displayMessage('failure', 'All items must have a quantity, a positive unit cost, a positive selling price, and a future expiry date.');
+        displayMessage('failure', 'All items must have a quantity, a positive unit cost and a positive selling price.');
         return;
     }
 
@@ -78,7 +77,6 @@ async function saveQuery(event) {
             quantity: item.quantity,
             unitCost: item.costPrice, 
             unitSellPrice: item.sellPrice,
-            expiryDate: item.expiryDate 
         }));
 
     try {
@@ -165,6 +163,7 @@ function addToSelectedItems(itemToAdd) {
             totalCost: '',
             totalPrice: '',
             quantity: 1, // Start with 1
+            stockQuantity: itemToAdd.total_quantity_in_stock,
             unit: itemToAdd.unit_name,
         });
     }
@@ -177,7 +176,6 @@ function renderSelectedItems() {
     tbody.innerHTML = ''; 
     let totalCost = 0;
     let totalPrice = 0;
-
 
     if (selectedItems.length === 0) {
         const row = tbody.insertRow();
@@ -212,11 +210,12 @@ function renderSelectedItems() {
         quantityInput.addEventListener('change', (e) => {
             const newQuantity = parseInt(e.target.value);
 
-            if(newQuantity < 0){
-                displayMessage('failure', "Quantity of items can't be 0");
-            }else if(newQuantity > item.stockQuantity){
+            if (newQuantity <= 0 || isNaN(newQuantity)) {
+                displayMessage('failure', "Quantity must be a positive number.");
+                e.target.value = item.quantity; // Reset to the previous valid value
+            } else if (newQuantity > item.stockQuantity) {
                 displayMessage('failure', "Not enough items in stock");
-            }else{
+            } else {
                 item.quantity = newQuantity;
                 e.target.value = item.quantity;
                 renderSelectedItems(); 
@@ -246,7 +245,7 @@ function renderSelectedItems() {
         totalCost += costTotal;
 
         // 8. Price (Subtotal)
-        const priceTotal = item.quantity * item.costPrice;
+        const priceTotal = item.quantity * item.sellPrice;
         const priceTotalCell = row.insertCell();
         priceTotalCell.classList.add('item-totalPrice'); 
         priceTotalCell.textContent = priceTotal.toFixed(2);
@@ -297,7 +296,7 @@ function clearSelectedItems(){
 document.getElementById('searchForm').addEventListener('submit', searchForm);
 
 // On submit of Save Return Form
-document.getElementById('saveReturn').addEventListener('submit', saveReturn);
+document.getElementById('saveReturn').addEventListener('submit', finalizeTransaction);
 
 // Helper to display messages
 function displayMessage(type, msg) {
