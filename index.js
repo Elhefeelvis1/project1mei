@@ -167,6 +167,38 @@ app.get("/transactions", async (req, res) => {
     //     res.render("adminlogin.ejs");
     // }
 })
+app.get("/returnsPage", (req, res) => {
+    res.render('internalStockUpdates.ejs', {
+        returnsPage : true,
+        expiredDrugsPage: false,
+        officeUsePage: false,
+        damagedDrugsPage: false
+    })
+})
+app.get("/expiredDrugsPage", (req, res) => {
+    res.render('internalStockUpdates.ejs', {
+        returnsPage : false,
+        expiredDrugsPage: true,
+        officeUsePage: false,
+        damagedDrugsPage: false
+    })
+})
+app.get("/officeUsePage", (req, res) => {
+    res.render('internalStockUpdates.ejs', {
+        returnsPage : false,
+        expiredDrugsPage: false,
+        officeUsePage: true,
+        damagedDrugsPage: false
+    })
+})
+app.get("/damagedDrugsPage", (req, res) => {
+    res.render('internalStockUpdates.ejs', {
+        returnsPage : false,
+        expiredDrugsPage: false,
+        officeUsePage: false,
+        damagedDrugsPage: true
+    })
+})
 // User log in
 app.get("/adminlogin", (req, res) => {
     const errorMessage = req.flash('error');
