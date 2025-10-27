@@ -77,6 +77,7 @@ async function finalizeTransaction(event) {
             quantity: item.quantity,
             unitCost: item.costPrice, 
             unitSellPrice: item.sellPrice,
+            expiryDate: item.expiryDate, //to find the lot, or the closest one
         }));
 
     try {
@@ -165,6 +166,7 @@ function addToSelectedItems(itemToAdd) {
             quantity: 1, // Start with 1
             stockQuantity: itemToAdd.total_quantity_in_stock,
             unit: itemToAdd.unit_name,
+            expiryDate: '',
         });
     }
     renderSelectedItems(); // Re-render the cart table
@@ -251,7 +253,28 @@ function renderSelectedItems() {
         priceTotalCell.textContent = priceTotal.toFixed(2);
         totalPrice += priceTotal;
 
-        // 9. Actions Column
+        // 9. Expiry Date Input
+        const expiryCell = row.insertCell();
+        const expiryInput = document.createElement('input');
+        expiryInput.type = 'date';
+        expiryInput.value = item.expiryDate;
+        expiryInput.className = 'form-control item-expiry-date'; 
+        
+        expiryInput.addEventListener('change', (e) => {
+            const newDate = e.target.value;
+            const today = new Date().toISOString().split('T')[0];
+            
+            // FIX 2: Check against current date string
+            if(newDate && newDate <= today){
+                displayMessage('failure', "Expiry date must be a future date.");
+                e.target.value = item.expiryDate; 
+            }else{
+                item.expiryDate = newDate;
+            }
+        });
+        expiryCell.appendChild(expiryInput); 
+
+        // 10. Actions Column
         const actionCell = row.insertCell();
         actionCell.classList.add('text-center'); 
         
