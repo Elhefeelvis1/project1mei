@@ -263,12 +263,17 @@ function renderSelectedItems() {
         expiryInput.addEventListener('change', (e) => {
             const newDate = e.target.value;
             const today = new Date().toISOString().split('T')[0];
+            const ifExpired = document.getElementById('processExpired');
             
-            // FIX 2: Check against current date string
-            if(newDate && newDate <= today){
-                displayMessage('failure', "Expiry date must be a future date.");
-                e.target.value = item.expiryDate; 
-            }else{
+            if(!ifExpired){
+                if(newDate && newDate <= today){
+                    displayMessage('failure', "Unless it's an expired item (*use the expired items process), expiry date must be a future date. ");
+                    e.target.value = item.expiryDate; 
+                }else{
+                    item.expiryDate = newDate;
+                }
+            }
+            else{
                 item.expiryDate = newDate;
             }
         });

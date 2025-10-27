@@ -19,6 +19,8 @@ import * as sales from "./imports/salesLogic.js";
 import checkTransaction from './imports/checkTransaction.js';
 // importing addPurchase function
 import savePurchase from './imports/addPurchase.js';
+// importing internal stock updates
+import {saveReturn, saveExpired, saveOfficeUse, saveDamaged} from './imports/internalStockUpdates.js';
 
 
 const app = express();
@@ -368,6 +370,26 @@ app.post("/api/process-purchase", async (req, res) => {
         });
     }
 });
+
+// Process Returns
+app.post("/api/process-return", async (req, res) => {
+
+})
+
+// Process Damaged items
+app.post("/api/process-damaged", async (req, res) => {
+
+})
+
+// Process Office Use
+app.post("/api/process-officeUse", async (req, res) => {
+
+})
+
+// Process Expired items
+app.post("/api/process-expired", async (req, res) => {
+
+})
 
 //********Register new / Edit user 
 app.post("/editUser", async (req, res) => {
