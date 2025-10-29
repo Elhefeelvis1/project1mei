@@ -20,7 +20,7 @@ import checkTransaction from './imports/checkTransaction.js';
 // importing addPurchase function
 import savePurchase from './imports/addPurchase.js';
 // importing internal stock updates
-import {saveReturn, saveExpired, saveOfficeUse, saveDamaged} from './imports/internalStockUpdates.js';
+import {saveReturn, removeExpiredStock, saveOfficeUse, removeDamagedStock} from './imports/internalStockUpdates.js';
 
 
 const app = express();
@@ -409,7 +409,7 @@ app.post("/api/process-damaged", async (req, res) => {
     const data = req.body.requestData;
 
     try {
-        const result = await saveDamaged(db, res, userId, data);
+        const result = await removeDamagedStock(db, res, userId, data);
 
         if (result && result.stockChangeId) {
             res.status(201).json({
@@ -440,7 +440,7 @@ app.post("/api/process-officeUse", async (req, res) => {
     const data = req.body.requestData;
 
     try {
-        const result = await saveReturn(db, res, userId, data);
+        const result = await saveOfficeUse(db, res, userId, data);
 
         if (result && result.stockChangeId) {
             res.status(201).json({
@@ -471,7 +471,7 @@ app.post("/api/process-expired", async (req, res) => {
     const data = req.body.requestData;
 
     try {
-        const result = await saveReturn(db, res, userId, data);
+        const result = await removeExpiredStock(db, res, userId, data);
 
         if (result && result.stockChangeId) {
             res.status(201).json({

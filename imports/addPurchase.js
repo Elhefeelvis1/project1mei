@@ -15,7 +15,6 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         // --- Purchase Header Creation ---
         let totalPurchaseAmount = 0;
 
-        // Use a dedicated 'purchases' table (assuming one exists)
         const purchaseResult = await db.query(
             `INSERT INTO purchases (user_id, total_amount) VALUES ($1, $2) RETURNING id;`,
             [userId, 0.00] // Temporary 0.00 value
@@ -23,8 +22,6 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         const purchaseId = purchaseResult.rows[0].id;
 
         // --- Line Item Processing and Stock Update (LOT Creation) ---
-        
-        // We will collect all product updates (last cost, selling price) into a batch
         const productUpdates = [];
         
         for (const item of items) {
@@ -56,13 +53,19 @@ export default async function savePurchase(userId, purchaseData, db, res) {
             const newLotId = lotResult.rows[0].lot_id;
             
             // 4. Record Stock Change (Inflow)
-            // Get current total stock for the product (needed for new_quantity_on_hand)
-            const currentStockResult = await db.query(
-                `SELECT COALESCE(SUM(quantity_in_lot), 0) AS total_quantity FROM stock_lots WHERE product_id = $1;`,
+            const newTotalStockResult = await db.query(
+                `SELECT total_quantity_in_stock FROM all_stocks WHERE id = $1;`,
                 [productId]
             );
-            const currentTotalStock = parseFloat(currentStockResult.rows[0].total_quantity) + quantity;
-            
+
+            // Defensive check (although trigger should ensure a row exists)
+            if (newTotalStockResult.rows.length === 0) {
+                 await db.query('ROLLBACK');
+                 return res.status(500).json({ message: `Internal error: Failed to find Product ID ${productId} in all_stocks after lot creation.` });
+            }
+
+            const currentTotalStock = parseFloat(newTotalStockResult.rows[0].total_quantity_in_stock);
+
             await db.query(
                 `INSERT INTO stock_changes (product_id, change_type, quantity_change, new_quantity_on_hand, cost_impact, user_id, purchase_id, lot_id)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
@@ -81,19 +84,15 @@ export default async function savePurchase(userId, purchaseData, db, res) {
                 unitSellPrice: unitSellPrice
             });
         }
-        
-        // --- Product Metadata Update (Single Transaction for all products) ---
 
-        // This is simplified: in reality, you might use a sophisticated batch update
-        // (like the CASE statement in the sale function) or a dedicated function.
-        // For simplicity here, we iterate and update:
         for (const update of productUpdates) {
-             await db.query(
+            await db.query(
                 `UPDATE all_stocks SET 
-                 last_updated_date = NOW(), 
-                 unit_selling_price = $1 
-                 WHERE id = $2;`,
-                [update.unitSellPrice, update.productId]
+                    last_updated_date = NOW(), 
+                    last_purchase_cost = $1, 
+                    unit_selling_price = $2 
+                WHERE id = $3;`,
+                [update.unitCost, update.unitSellPrice, update.productId] // Use unitCost from the list
             );
         }
 
@@ -112,7 +111,6 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         await db.query('ROLLBACK');
         console.error('Error processing purchase (unexpected):', error.message || error);
         
-        // Use a specific error message for purchase
         throw new Error(`Failed to process purchase due to an internal error: ${error.message || 'Unknown error'}`);
     }
 }
