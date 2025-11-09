@@ -105,7 +105,7 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         await db.query('COMMIT');
         
         // Return only the necessary successful data.
-        return { purchaseId: purchaseId }; 
+        return { purchaseId: purchaseId };
 
     } catch (error) {
         await db.query('ROLLBACK');
