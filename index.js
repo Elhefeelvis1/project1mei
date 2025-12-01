@@ -108,12 +108,17 @@ app.get("/dashboard", async (req, res) => {
     // if(req.isAuthenticated()){
     //     console.log(req.user)
     //     if(req.user.role === "administrator"){
-            const userData = await db.query('SELECT * FROM users');
+            const allUsers = await db.query('SELECT username, role FROM users');
+            const sales = await db.query("SELECT ast.name, change_type, quantity_change, unit_selling_price, last_cost_price FROM stock_changes AS sc JOIN all_stocks AS ast ON sc.product_id = ast.id WHERE sc.change_type = 'Sales' ORDER BY change_date DESC LIMIT 15");
+            const purchases = await db.query("SELECT ast.name, pli.quantity_purchased, TO_CHAR(pli.purchase_date, 'YYYY-MM-DD') AS purchase_date FROM purchase_line_items AS pli JOIN all_stocks AS ast ON pli.product_id = ast.id ORDER BY purchase_date DESC LIMIT 5");
 
+            console.log(allUsers.rows)
             res.render("dashboard.ejs", {
                 user: req.user,
-                users: userData.rows
-            });
+                users: allUsers.rows,
+                recentSales: sales.rows, 
+                recentPurchases: purchases.rows,
+            }); 
     //     }
     //     else{
     //         res.render("saleslogin.ejs", {

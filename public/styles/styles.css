@@ -9,6 +9,7 @@ body{
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
 a{
@@ -238,9 +239,10 @@ footer p{
 }
 
 /***************************** Dashboard Styles ************************/
-.mainDashboard .sidebar{
+.mainDashboard .sidebar .menubar{
     position: fixed;
     top: 0;
+    height: 100%;
     /* display: none; */
     overflow-y:scroll;
 }
@@ -350,24 +352,34 @@ i{
 }
 .mainDashboard .bodyDiv{
     width: calc(100vw - 350px);
-    position: fixed;
-    right: 0;
+    margin-left: 350px;
 }
 
-@media screen and (min-width: 850px) {
-    .mainDashboard .body{
-        margin-left: 350px;
+@media screen and (max-width: 850px) {
+    .mainDashboard .bodyDiv{
+        width: 100%;
+        margin-left: 0;
     }
-}
-@media screen and (max-width: 569px) {
+    .mainDashboard .sidebar .hamburger{
+        z-index: 101;
+    }
+    .mainDashboard .sidebar input{
+        z-index: 102;
+    }
     .mainDashboard .sidebar .menubar{
+        display: none;
+        z-index: 100;
         transform: translateX(-500px);
         transition: 0.5s ease;
     }
     .mainDashboard .sidebar input:checked ~ .menubar{
+        display: block;
         transform: translateX(0);
     }
     .hamburger{
         display: block;
     }
+}
+@media screen and (max-width: 569px) {
+    
 }

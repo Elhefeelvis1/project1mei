@@ -218,6 +218,11 @@ CREATE TABLE stock_changes (
         ON UPDATE CASCADE ON DELETE SET NULL 
 );
 
+-- Create debt table
+CREATE TABLE debts(id INT PRIMARY KEY NOT NULL,
+customer_id INT NOT NULL REFERENCES FOREIGN KEY customers(id),
+sale_id INT NOT NULL REFERENCES FOREIGN KEY sales(id))
+
 -- Function to update total_quantity_in_stock after INSERT, UPDATE, or DELETE on stock_lots
 CREATE OR REPLACE FUNCTION update_all_stocks_total_quantity()
 RETURNS TRIGGER AS $$
