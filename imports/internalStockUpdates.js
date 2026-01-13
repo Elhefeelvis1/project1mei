@@ -87,7 +87,7 @@ async function saveReturn(db, res, userId, requestData) {
                     user_id,
                     new_quantity_after_change
                 )
-                VALUES ($1, $2, 'RETURN', $3, $4, $5);
+                VALUES ($1, $2, 'Return', $3, $4, $5);
             `;
             
             await db.query(insertChangeQuery, [
@@ -179,7 +179,7 @@ async function removeExpiredStock(db, res, userId, requestData) {
                 // 4. Save the Stock Change
                 const insertChangeQuery = `
                     INSERT INTO stock_changes (lot_id, product_id, change_type, quantity_changed, user_id, new_quantity_after_change)
-                    VALUES ($1, $2, 'DISPOSAL', -$3, $4, $5);
+                    VALUES ($1, $2, 'Expired', -$3, $4, $5);
                 `;
                 await db.query(insertChangeQuery, [lot_id, product_id, quantity_taken_from_lot, userId, new_quantity]);
 
@@ -284,7 +284,7 @@ async function saveOfficeUse(db, res, userId, requestData) {
                             user_id,
                             new_quantity_after_change
                         )
-                        VALUES ($1, $2, 'OFFICE_USE', -$3, $4, $5);
+                        VALUES ($1, $2, 'OfficeUse', -$3, $4, $5);
                     `;
                     
                     // The quantity_changed is negative to represent the removal
@@ -401,7 +401,7 @@ async function removeDamagedStock(db, res, userId, requestData) {
                         user_id,
                         new_quantity_after_change
                     )
-                    VALUES ($1, $2, 'DAMAGED', -$3, $4, $5);
+                    VALUES ($1, $2, 'Damaged', -$3, $4, $5);
                 `;
                 
                 // The quantity_changed is negative to represent the removal

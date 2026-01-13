@@ -53,9 +53,6 @@ app.use((req, res, next) => {
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Global Variables
-let selectedItems = [];
-let categoryList;
 // Global functions
 function addLabel(name, tableName, req, res){
     if(addEdit.addNew(name, tableName, db)){
@@ -87,18 +84,15 @@ app.get("/", (req, res) => {
 });
 app.get("/salesPage", async (req, res) => {
     // if(req.isAuthenticated()){
-        const result = await db.query('SELECT name FROM categories')
-        
-        categoryList = [];
-        let categories = result.rows;
-        categories.forEach((ctg) => {
-            categoryList.push(ctg.name);
-        });
+        const categories = await db.query('SELECT name FROM categories');
+        const banks = await db.query('SELECT * FROM banks');
+        const customers = await db.query('SELECT id, name FROM customers');
 
         res.render("salesPage.ejs", {
             user: req.user,
-            selectedItems: selectedItems,
-            categories: categoryList
+            categories: categories.rows,
+            banks: banks.rows,
+            customers: customers.rows
         });
     // }else{
 //         res.render("saleslogin.ejs");
@@ -129,7 +123,7 @@ app.get("/dashboard", async (req, res) => {
     //     res.render("adminlogin.ejs");
     // }
 })
-app.get("/purchase", async (req, res) => {
+app.get("/purchasePage", async (req, res) => {
     // if(req.isAuthenticated()){
     //     console.log(req.user)
     //     if(req.user.role === "administrator"){
@@ -157,7 +151,9 @@ app.get("/purchase", async (req, res) => {
     //     res.render("adminlogin.ejs");
     // }
 })
-app.get("/transactions", async (req, res) => {
+
+// Get transactions
+app.get("/transactionPage", async (req, res) => {
     // if(req.isAuthenticated()){
            const userData = await db.query('SELECT id, username FROM users');
     //     if(req.user.role === "administrator"){
@@ -173,7 +169,19 @@ app.get("/transactions", async (req, res) => {
     // }else{
     //     res.render("adminlogin.ejs");
     // }
+});
+
+// Product Tracker
+app.get("/productTracker", async (req, res) => {
+    // Fetch Categories
+    const categories = await db.query('SELECT name FROM categories');
+
+    res.render('productTracker.ejs', {
+        categories: categories.rows
+    })
 })
+
+// Admin Updates
 app.get("/returnsPage", (req, res) => {
     res.render('internalStockUpdates.ejs', {
         returnsPage : true,
@@ -227,10 +235,7 @@ app.get('/saleslogin', (req, res) => {
 // step 1: getting the list of items from a search
 app.get("/api/searchItems", async (req, res) => {
     // 1. Read parameters from req.query (since frontend uses a GET request with query params)
-    let itemName = req.query.itemName;
-    let category = req.query.category;
-    let minPrice = req.query.minPrice;
-    let maxPrice = req.query.maxPrice;
+    const{itemName, category, minPrice, maxPrice} = req.query;
 
     try{
         // Execute the database search
@@ -258,6 +263,91 @@ app.get("/api/searchItems", async (req, res) => {
             success: false,
             message: `Couldn't search for item: ${err.message}`,
             error: err.message 
+        });
+    }
+});
+
+// Search customers
+app.get("/api/searchCustomers", async (req, res) => {
+    const customerName = req.query.customerName;
+
+    try{
+        const result = await db.query('SELECT * FROM customers WHERE name ILIKE $1', [`%${customerName}%`])
+        const data = result.rows;
+        
+        if(data.length > 0){
+            res.json({
+                success: true,
+                message: `${data.length} customer(s) found!`,
+                contents: data
+            });
+        } else {
+            res.status(404).json({  
+                success: false,
+                message: "",
+                contents: []
+            });
+            console.log(data)
+        }
+    }catch(error){
+        console.error('Database query error:', err);
+        res.status(500).json({
+            success: false,
+            message: `Couldn't retrieve customers: ${err.message}`,
+            error: err.message
+        });
+    }
+})
+
+// Item Tracker
+app.get("/api/track-product", async (req, res) => {
+    const { productId, startDate, stopDate } = req.query; 
+
+    try {
+        const queryText = `
+            SELECT 
+                sc.id,
+                sc.change_type,
+                sc.quantity_change,
+                sc.cost_impact,
+                sc.change_date,
+                sl.lot_id,
+                u.username
+            FROM stock_changes sc
+            LEFT JOIN stock_lots sl ON sc.lot_id = sl.lot_id
+            LEFT JOIN users u ON sc.user_id = u.id
+            WHERE sc.product_id = $1
+                AND sc.change_date >= $2::date 
+                AND sc.change_date < ($3::date + '1 day'::interval)
+            ORDER BY sc.change_date DESC;
+        `;
+
+        const values = [parseInt(productId), startDate, stopDate];
+
+        const result = await db.query(queryText, values);
+
+        const data = result.rows;
+
+        if(data.length > 0){
+            res.json({
+                success: true,
+                message: `${data.length} transaction(s) found!`,
+                contents: data
+            });
+        } else {
+            res.status(404).json({  
+                success: false,
+                message: "No transactions found for this item.",
+                contents: []
+            });
+        }
+
+    }catch(error){
+        console.error('Database query error:', error);
+        res.status(500).json({
+            success: false,
+            message: `Couldn't retrieve data: ${error.message}`,
+            error: error.message
         });
     }
 });
@@ -302,7 +392,10 @@ app.post("/api/process-sale", async (req, res) => {
 app.post("/searchTransactions", async (req, res) => {
     const { startDate, endDate, transactionType, userId } = req.body;
 
+    console.log(transactionType, userId)
+
     const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
+    const userData = await db.query('SELECT id, username FROM users');
 
     if(Array.isArray(data) && data.length > 0){
         const transactionsWithRevenue = data.map(transaction => {
@@ -331,19 +424,23 @@ app.post("/searchTransactions", async (req, res) => {
         res.render('transactions.ejs', {
             contents: transactionsWithRevenue,
             totalSalesRevenue: totalSalesRevenue.toFixed(2),
-            totalDiscount: totalDiscount.toFixed(2)
+            totalDiscount: totalDiscount.toFixed(2),
+            users: userData.rows,
         })
     }else if(!Array.isArray(data)){
         res.render('transactions.ejs', {
-            message: data
+            message: data,
+            users: userData.rows,
         });
     }else{
         res.render('transactions.ejs', {
-            message: "No transactions found for this timeline"
+            message: "No transactions found for this timeline",
+            users: userData.rows,
         });
     }
 })
 
+// Process Purchase
 app.post("/api/process-purchase", async (req, res) => {
     // const userId = req.user.id;
     const userId = 1; // Temporary hardcoded user ID for testing

@@ -219,9 +219,10 @@ CREATE TABLE stock_changes (
 );
 
 -- Create debt table
-CREATE TABLE debts(id INT PRIMARY KEY NOT NULL,
+CREATE TABLE debts(id SERIAL PRIMARY KEY,
 customer_id INT NOT NULL REFERENCES FOREIGN KEY customers(id),
 sale_id INT NOT NULL REFERENCES FOREIGN KEY sales(id))
+
 
 -- Function to update total_quantity_in_stock after INSERT, UPDATE, or DELETE on stock_lots
 CREATE OR REPLACE FUNCTION update_all_stocks_total_quantity()

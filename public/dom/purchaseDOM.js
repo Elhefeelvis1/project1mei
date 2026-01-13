@@ -312,11 +312,10 @@ document.getElementById('savePurchase').addEventListener('submit', async (e) => 
         const data = await response.json();
 
         if (!response.ok) {
-            console.error('Purchase failed:', data.message);
             displayMessage('failure', data.message);
         } else {
             // Success handling
-            displayMessage('success', data.message + ` Purchase ID: ${data.purchaseId}`);
+            displayMessage('success', data.message + ` Purchase ID: ${data.contents.purchaseId}`);
             selectedItems = []; 
             renderSelectedItems(); 
             // Trigger a search to update total stock view if necessary

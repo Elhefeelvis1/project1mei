@@ -7,13 +7,13 @@
         <div class="searchFilters bg-success">
             <form class="" id="searchForm" action="" method="post">
                 <!-- Button trigger modal -->
-                <button class="btn btn-dark w-50" type="submit" data-bs-toggle="modal" data-bs-target="#staticBackdrop">Search <i class="fa-solid fa-search"></i></button>
+                <button class="btn btn-dark w-50" type="submit" data-bs-toggle="modal" data-bs-target="#itemsList">Search <i class="fa-solid fa-search"></i></button>
                 <input id="itemName" class="form-control border-dark" type="text" name="itemName" placeholder="Enter the item name">
                 <select id="category" class="form-control border-dark" name="category">
                     <option hidden disabled selected value>(Select a Category)</option>
                     <% if(locals.categories){ %>
                     <% categories.forEach((ctg) => { %>
-                    <option value="<%= ctg %>"><%= ctg %></option>
+                    <option value="<%= ctg.name %>"><%= ctg.name %></option>
                     <% }) %>
                     <% } %>
                 </select>
@@ -26,11 +26,11 @@
         </div>
         <div class="tableSection">
             <!-- Modal -->
-            <div class="modal fade col-lg-10" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal fade col-lg-10" id="itemsList" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
                 <div class="modal-dialog modal-xl">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h1 class="modal-title fs-5" id="staticBackdropLabel">Select an item</h1>
+                            <h1 class="modal-title fs-5" id="itemsListLabel">Select an item</h1>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
@@ -67,15 +67,64 @@
                         <th scope="col" class="col-lg-1">Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
+                     <tbody>
                         <!-- the rest of the table is rendered dynamically -->
                     </tbody>
                 </table>
                 <div class="d-flex align-center justify-content-between bg-dark text-white p-3 mb-3">
-                    <div class="text-center col-lg-3">
-                        <div>
-                            <label for="customerName">Customer Name:</label>
-                            <input type="text" name="customerName" id="customerName" class="form-control border-dark">
+                    <div class="text-center col-lg-6">
+                        <div class="d-flex gap-2 mb-3">
+                            <div>
+                                <label for="banks">Payment Route:</label>
+                                <select id="payRoute" name="payRoute" class="form-control border-dark">
+                                    <option hidden disabled selected value>(Select the payment Route)</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="POS">POS</option>
+                                    <option value="Credit">Credit</option>
+                                </select>
+                            </div>
+                            <div id="banksDiv" hidden="true">
+                                <label for="banks">Banks</label>
+                                <select id="banks" name="banks" class="form-control border-dark">
+                                    <option hidden disabled selected value>(Select Bank)</option>
+                                    <% if(locals.banks){ %>
+                                    <% banks.forEach((bank) => { %>
+                                    <option value="<%= bank.id %>"><%= bank.bank_name %> - <%= bank.account_number %></option>
+                                    <% }) %>
+                                    <% } %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <button class="btn btn-dark w-50" id="searchCustomerButton" data-bs-toggle="modal" data-bs-target="#searchCustomer">Search <i class="fa-solid fa-search"></i></button>
+                            <input id="customerId" class="form-control border-dark" type="text" name="customerId" placeholder="Enter the customer name">                            
+                        </div>
+                    </div>
+                    <!-- Modal -->
+                    <div class="modal fade col-lg-10" id="searchCustomer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-xl">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h1 class="modal-title fs-5" id="searchCustomerLabel">Related search</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <table id="searchCustomerTable" class="table table-bordered">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col">Action</th>
+                                            <th scope="col">Name</th>
+                                            <th scope="col">Phone</th>
+                                            <th scope="col">Email</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Rows will be populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="col-lg-3">

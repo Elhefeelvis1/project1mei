@@ -6,7 +6,7 @@
         </div>
         <!-- Name, filter parameters are entered to perform a search -->
         <div class="searchFilters mb-3">
-            <form class="" action="/searchTransactions" method="post">
+            <form class="bg-primary" action="/searchTransactions" method="post">
                 <button class="btn btn-dark col-2" type="submit">Search <i class="fa-solid fa-search"></i></button>
                 <div>
                     <label for="startDate">Start Date:</label>
@@ -21,11 +21,11 @@
                     <select class="form-control border-dark" name="transactionType" id="transactionType">
                         <option hidden disabled selected value>(Select a Transaction type)</option>
                         <option value="all">All Types</option>
-                        <option value="Sale">Sale</option>
+                        <option value="Sales">Sales</option>
                         <option value="Return">Return</option>
                         <option value="Purchase">Purchase</option>
                         <option value="Adjustment">Manual Adjustment</option>
-                        <option value="Office">Office Use</option>
+                        <option value="OfficeUse">Office Use</option>
                         <option value="Damaged">Damaged</option>
                     </select>
                 </div>
@@ -45,8 +45,8 @@
         </div>
         <div class="item-list-table ">
             <table class="table table-striped table-bordered">
-                <thead class="thead-dark">
-                  <tr>
+                <thead>
+                  <tr class="table-dark">
                     <th scope="col" class="col-lg-4">Item</th>
                     <th scope="col" class="col-lg-1">Trans.Type</th>
                     <th scope="col" class="">Quantity</th>

@@ -2,6 +2,7 @@
 let selectedItems = [];
 let grandTotal = 0;
 let discount = 0;
+let currentCustomerId = 0;
 
 // Function to render search results dynamically
 function renderSearchResults(items) {
@@ -219,11 +220,75 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
             renderSearchResults([]);
         }
 
+        document.getElementById('itemName').value = ""
+        document.getElementById('category').value = ""
+        document.getElementById('minPrice').value = ""
+        document.getElementById('maxPrice').value = ""
+
     } catch (error) {
         console.error('Network or parsing error:', error);
         displayMessage('failure', `An error occurred during search: ${error.message}`);
     }
 });
+
+// Search customers
+document.getElementById('searchCustomerButton').addEventListener('click', async() => {
+    const customerName = document.getElementById("customerNameInput").value;
+
+    if (customerName){
+        try {
+            const response = await fetch(`/api/searchCustomers?customerName=${customerName}`); // Use GET
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error('Search error:', data.message);
+                displayMessage('failure', `Database error. ${data.message}`);
+                return;
+            }if (data.contents && data.contents.length > 0) {
+                const tbody = document.getElementById('searchCustomerTable').querySelector('tbody');
+                tbody.innerHTML = ''; // Clear previous results
+            
+                data.contents.forEach(customer => {
+                    const row = tbody.insertRow();
+            
+                    const actionCell = row.insertCell();
+                    if (customer.id > 0) {
+                        const buttonDiv = document.createElement('div');
+                        buttonDiv.classList.add('d-flex', 'justify-content-center');
+            
+                        const addButton = document.createElement('button');
+                        // Use Bootstrap class for styling
+                        addButton.className = 'btn btn-success btn-sm';
+                        addButton.setAttribute('data-bs-dismiss', 'modal');
+                        addButton.textContent = 'Select';
+                        addButton.addEventListener('click', () => {
+                            currentCustomerId = customer.id;
+                            document.getElementById("customerNameInput").value = customer.name;
+                        });
+            
+                        actionCell.appendChild(buttonDiv);
+                        buttonDiv.appendChild(addButton);
+                    } else if(customer.id === 0) {
+                        actionCell.textContent = 'Default';
+                        actionCell.style.color = 'red';
+                    }
+            
+                    row.insertCell().textContent = customer.name;
+                    row.insertCell().textContent = customer.phone_number;
+                    row.insertCell().textContent = customer.email;
+                });
+            } else {
+                console.error('User not found');
+                displayMessage('failure', `There's no user with the name: ${customerName}`);
+                return;
+            }
+
+        } catch (error) {
+            console.error('Network or parsing error:', error);
+            displayMessage('failure', `An error occurred during search: ${error.message}`);
+        }
+    }
+})
 
 // Discount Input Handling
 document.querySelectorAll(".discountInput").forEach((input) => {
@@ -288,13 +353,32 @@ document.querySelectorAll(".discountInput").forEach((input) => {
 document.getElementById('saveSales').addEventListener('submit', async (e) => {
     e.preventDefault(); 
 
+    const payRouteInput = document.getElementById('payRoute').value;
+    const banksInput = parseInt(document.getElementById('banks').value);
+
     if (selectedItems.length === 0) {
         displayMessage('failure', 'Please select items to finalize sale.');
         return;
     }
+    
+    if (!payRouteInput) {
+        displayMessage('failure', 'Please select a payment route to finalize sale.');
+        return;
+    }
 
-    // const customerNameInput = document.getElementById('customerName').value;
-    // customerName: (customerNameInput) ? customerNameInput : 'Walk-in Customer', // Optional customer name in saleData
+    if (payRouteInput === "Transfer" || payRouteInput === "POS") {
+        if (!banksInput) {
+            displayMessage('failure', 'Please select a bank for the chosen payment route.');
+            return;
+        }
+    }
+
+    if (payRouteInput === "Credit") {
+        if (!currentCustomerId) {
+            displayMessage('failure', 'Please enter a customer name for credit sales.');
+            return;
+        }
+    }
 
     const saleData = {
         items: selectedItems.map(item => ({
@@ -303,8 +387,13 @@ document.getElementById('saveSales').addEventListener('submit', async (e) => {
             quantity: item.quantity,
             sellPrice: item.sellPrice
         })),
+        customerId: currentCustomerId,
+        payRoute: payRouteInput,
+        bank: banksInput,
         totalDiscount: discount
     };
+
+    console.log(saleData);
 
     try {
         const response = await fetch('/api/process-sale', {
@@ -323,7 +412,7 @@ document.getElementById('saveSales').addEventListener('submit', async (e) => {
             console.log('Sale failed:', data.message);
             displayMessage('failure', data.message);
         } else {
-            displayMessage('success', data.message + ` Sale ID: ${data.saleId}`);
+            displayMessage('success', data.message + ` Sale ID: ${data.contents.saleId}`);
             selectedItems = []; // Clear the client-side cart
             renderSelectedItems(); // Update the displayed cart
             discount = 0; // Reset discount
@@ -393,3 +482,12 @@ function displayMessage(type, msg) {
 
 // Initial render of selected items when page loads
 document.addEventListener('DOMContentLoaded', renderSelectedItems);
+
+// Payment Route Change Handling
+document.getElementById('payRoute').addEventListener('input', () => {
+    if(document.getElementById('payRoute').value === 'Transfer' || document.getElementById('payRoute').value === 'POS'){
+        document.getElementById('banksDiv').removeAttribute('hidden');
+    }else{
+        document.getElementById('banksDiv').setAttribute('hidden', "");
+    }
+})

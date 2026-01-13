@@ -1,3 +1,5 @@
+import logStockTransaction from "./updateStockChanges.js";
+
 // Searching for a drug
 export async function searchDb(name, category, startPrice, stopPrice, db){
     const queryParts = [];
@@ -79,8 +81,8 @@ export async function saveSale(userId, saleData, db, res){
         let totalSaleAmount = 0;
 
         const saleResult = await db.query(
-            `INSERT INTO sales (user_id, total_amount, discount_applied) VALUES ($1, $2, $3) RETURNING id;`,
-            [userId, 0.00, 0.00] // Temporary 0.00 values
+            `INSERT INTO sales (user_id, total_amount, discount_applied, customer_id, pay_route, bank_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`,
+            [userId, 0.00, 0.00, saleData.customerId, saleData.payRoute, saleData.bank] // Temporary 0.00 values
         );
         const saleId = saleResult.rows[0].id;
 
@@ -181,11 +183,16 @@ export async function saveSale(userId, saleData, db, res){
             }
             const newQuantity = currentTotalStock - quantity;
             const lineItemCost = quantity * soldFromLots[0].costPerUnit; // Approximate cost impact using the first lot's cost
-            await db.query(
-                `INSERT INTO stock_changes (product_id, change_type, quantity_change, new_quantity_on_hand, cost_impact, user_id, sale_id)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7);`,
-                [productId, 'Sales', -quantity, newQuantity, -lineItemCost, userId, saleId]
-            );
+            await logStockTransaction(db, {
+                productId: productId,
+                changeAmount: -quantity,
+                oldQty: currentTotalStock,
+                newQty: newQuantity,
+                changeType: 'Sales',
+                costImpact: -lineItemCost, // Negative impact for a sale (cost of goods out)
+                userId: userId ,
+                saleId: saleId
+            });
         }
         // --- Discount Application ---
         let discountToApply = totalDiscountValue;
@@ -212,7 +219,7 @@ export async function saveSale(userId, saleData, db, res){
             `SELECT username 
             FROM users 
             WHERE id = $1;`,
-            [saleRecord.user_id] 
+            [saleRecord.user_id]
         );
         const username = userResult.rows[0] ? userResult.rows[0].username : 'Unknown User';
 

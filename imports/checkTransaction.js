@@ -22,13 +22,13 @@ export default async function checkTransaction(startDate, endDate, transactionTy
         paramCounter++;
     }
 
-    if (transactionType && transactionType !== 'all') {
+    if (transactionType !== 'all' && transactionType !== undefined) {
         queryParts.push(`sc.change_type = $${paramCounter}`);
         params.push(transactionType);
         paramCounter++;
     }
 
-    if (user && user !== 'all') {
+    if (user !== 'all' && user !== undefined) {
         queryParts.push(`sc.user_id = $${paramCounter}`);
         params.push(user);
         paramCounter++;
@@ -79,6 +79,8 @@ export default async function checkTransaction(startDate, endDate, transactionTy
     
     // --- 4. Append ORDER BY Clause and Execution ---
     sqlQuery += ` ORDER BY sc.change_date DESC, sc.id DESC;`; // CORRECTED: Ordering by change_date
+
+    console.log(sqlQuery, params)
 
     try {
         const result = await db.query(sqlQuery, params);

@@ -1,4 +1,5 @@
-// Function to record a purchase
+import logStockTransaction from './updateStockChanges.js'; // Ensure path is correct
+
 export default async function savePurchase(userId, purchaseData, db, res) {
     try {
         await db.query('BEGIN');
@@ -6,37 +7,35 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         const items = purchaseData.items;
         const supplierId = purchaseData.supplierId;
         
-        // --- Initial Validation ---
+        // 1. Initial Validation
         if (!userId || !Array.isArray(items) || items.length === 0) {
             await db.query('ROLLBACK');
-            return res.status(400).json({ message: 'Invalid purchase data provided. User ID and items array are required.' });
+            return res.status(400).json({ message: 'Invalid purchase data provided.' });
         }
 
-        // --- Purchase Header Creation ---
-        let totalPurchaseAmount = 0;
-
+        // 2. Create Purchase Header
         const purchaseResult = await db.query(
-            `INSERT INTO purchases (user_id, total_amount) VALUES ($1, $2) RETURNING id;`,
-            [userId, 0.00] // Temporary 0.00 value
+            `INSERT INTO purchases (user_id, total_amount, supplier_id) VALUES ($1, $2, $3) RETURNING id;`,
+            [userId, 0.00, supplierId] 
         );
         const purchaseId = purchaseResult.rows[0].id;
 
-        // --- Line Item Processing and Stock Update (LOT Creation) ---
-        const productUpdates = [];
-        
+        let totalPurchaseAmount = 0;
+
+        // 3. Loop through items
         for (const item of items) {
             const { productId, quantity, unitCost, unitSellPrice, expiryDate } = item;
 
-            // 1. Line Item Validation (Strict for purchase data)
-            if (quantity <= 0 || unitCost <= 0 || unitSellPrice < 0 || !productId || !expiryDate) {
+            // Strict Validation
+            if (quantity <= 0 || unitCost <= 0 || !productId || !expiryDate) {
                 await db.query('ROLLBACK');
-                return res.status(400).json({ message: `Invalid data for purchase item. Ensure quantity, unit cost, selling price, and expiry date are valid. Product ID: ${productId}.` });
+                return res.status(400).json({ message: `Invalid item data for Product ID: ${productId}` });
             }
 
             const lineTotalCost = quantity * unitCost;
-            totalPurchaseAmount += lineTotalCost; // Accumulate the total purchase cost (before any supplier discount)
+            totalPurchaseAmount += lineTotalCost;
 
-            // 2. Insert into purchase_line_items
+            // A. Insert Line Item
             const purchaseLineResult = await db.query(
                 `INSERT INTO purchase_line_items (purchase_id, product_id, quantity_purchased, cost_per_unit)
                  VALUES ($1, $2, $3, $4) RETURNING id;`,
@@ -44,73 +43,63 @@ export default async function savePurchase(userId, purchaseData, db, res) {
             );
             const purchaseLineItemId = purchaseLineResult.rows[0].id;
 
-            // 3. Create a NEW Stock Lot
+            // B. Create Stock Lot (This increases quantity via your database trigger)
             const lotResult = await db.query(
-                `INSERT INTO stock_lots (product_id, quantity_in_lot, cost_per_unit, expiry_date, purchase_line_item_id)
-                 VALUES ($1, $2, $3, $4, $5) RETURNING lot_id;`,
-                [productId, quantity, unitCost, expiryDate, purchaseLineItemId]
+                `INSERT INTO stock_lots (product_id, quantity_in_lot, cost_per_unit, expiry_date)
+                 VALUES ($1, $2, $3, $4) RETURNING lot_id;`,
+                [productId, quantity, unitCost, expiryDate]
             );
             const newLotId = lotResult.rows[0].lot_id;
-            
-            // 4. Record Stock Change (Inflow)
-            const newTotalStockResult = await db.query(
-                `SELECT total_quantity_in_stock FROM all_stocks WHERE id = $1;`,
+
+            // C. Link Lot to Line Item
+            await db.query('UPDATE purchase_line_items SET lot_id = $1 WHERE id = $2', [newLotId, purchaseLineItemId]);
+
+            // D. Fetch quantity for Ledger (The snapshot)
+            // Note: If you have a trigger on stock_lots that updates total_quantity_in_stock, 
+            // you need to fetch the 'new' quantity and subtract change to get 'old'
+            const stockCheck = await db.query(
+                `SELECT total_quantity_in_stock FROM all_stocks WHERE id = $1`,
                 [productId]
             );
+            
+            const newTotalStock = parseInt(stockCheck.rows[0].total_quantity_in_stock);
+            const oldTotalStock = newTotalStock - quantity; // Because the lot insert already added the quantity
 
-            // Defensive check (although trigger should ensure a row exists)
-            if (newTotalStockResult.rows.length === 0) {
-                 await db.query('ROLLBACK');
-                 return res.status(500).json({ message: `Internal error: Failed to find Product ID ${productId} in all_stocks after lot creation.` });
-            }
-
-            const currentTotalStock = parseFloat(newTotalStockResult.rows[0].total_quantity_in_stock);
-
-            await db.query(
-                `INSERT INTO stock_changes (product_id, change_type, quantity_change, new_quantity_on_hand, cost_impact, user_id, purchase_id, lot_id)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
-                [productId, 'Purchase', quantity, currentTotalStock, lineTotalCost, userId, purchaseId, newLotId]
-            );
-
-            await db.query(
-                'UPDATE purchase_line_items SET lot_id = $1 WHERE id = $2',
-                [newLotId, purchaseLineItemId]
-            );
-
-            // 5. Update Product Metadata (Last Cost and Selling Price)
-            productUpdates.push({
+            // E. Record Audit Log using your helper
+            await logStockTransaction(db, {
                 productId: productId,
-                unitCost: unitCost,
-                unitSellPrice: unitSellPrice
+                changeAmount: quantity,
+                oldQty: oldTotalStock,
+                newQty: newTotalStock,
+                changeType: 'Purchase',
+                costImpact: lineTotalCost, // Monetary value added to inventory
+                userId: userId,
+                purchaseId: purchaseId, // Links to this specific purchase
+                lotId: newLotId
             });
-        }
 
-        for (const update of productUpdates) {
+            // F. Update Product Metadata (Prices)
             await db.query(
                 `UPDATE all_stocks SET 
-                    last_updated_date = NOW(), 
-                    last_purchase_cost = $1, 
-                    unit_selling_price = $2 
-                WHERE id = $3;`,
-                [update.unitCost, update.unitSellPrice, update.productId] // Use unitCost from the list
+                    last_updated_date = NOW(),
+                    unit_selling_price = $1 
+                WHERE id = $2;`,
+                [unitSellPrice, productId]
             );
         }
 
-        // --- Finalize Purchase Header ---
+        // 4. Update Header Total
         await db.query(
-            `UPDATE purchases SET total_amount = $1, supplier_id = $2 WHERE id = $3;`,
-            [totalPurchaseAmount, supplierId, purchaseId]
+            `UPDATE purchases SET total_amount = $1 WHERE id = $2;`,
+            [totalPurchaseAmount, purchaseId]
         );
-
-        await db.query('COMMIT');
         
-        // Return only the necessary successful data.
-        return { purchaseId: purchaseId };
+        await db.query('COMMIT');
+        return { success: true, purchaseId: purchaseId };
 
     } catch (error) {
         await db.query('ROLLBACK');
-        console.error('Error processing purchase (unexpected):', error.message || error);
-        
-        throw new Error(`Failed to process purchase due to an internal error: ${error.message || 'Unknown error'}`);
+        console.error('Purchase Error:', error.message);
+        throw error;
     }
 }

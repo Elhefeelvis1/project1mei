@@ -1,0 +1,98 @@
+<%- include("./partials/header.ejs") %>
+    <main>
+        <div class="searchFilters bg-info d-flex align-items-center">
+            <div class="col-md-4">
+                <form class="d-flex" id="searchForm" method="post">
+                    <input id="itemName" class="form-control border-dark" type="text" placeholder="Enter the item name">
+                    <select id="category" class="form-control border-dark" name="category">
+                        <option hidden disabled selected value>(Select a Category)</option>
+                        <% if(locals.categories){ %>
+                        <% categories.forEach((ctg) => { %>
+                        <option value="<%= ctg.name %>"><%= ctg.name %></option>
+                        <% }) %>
+                        <% } %>
+                    </select>
+                    <!-- Button trigger modal -->
+                    <button class="btn btn-dark w-50" onclick="searchItem()" data-bs-toggle="modal" data-bs-target="#itemsList"><i class="fa-solid fa-search"></i></button>
+                </form>
+            </div>
+            <div class="col-8">
+                <form class="d-flex align-items-center" id="checkData" action="" method="post">
+                    <p id="displayItem" class="col-md-2 link-underline-light"></p>
+                    <input type="hidden" id="productId" name="productId">
+                    <div class="col-md-2">
+                        <label for="startDate">Start Date</label>
+                        <input id="startDate" name="startDate" class="form-control border-dark" type="date" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="stopDate">End Date</label>
+                        <input id="stopDate" name="stopDate" class="form-control border-dark" type="date" required>
+                    </div>
+                    <button class="btn btn-dark w-20" type="submit">Search <i class="fa-solid fa-search"></i></button>
+                </form>
+            </div>
+        </div>
+        <div>
+            <!-- Modal -->
+            <div class="modal fade col-lg-10" id="itemsList" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="itemsListLabel">Select an item</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table id="searchResultsTable" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Action</th>
+                                        <th scope="col">Item Name</th>
+                                        <th scope="col">Price</th>
+                                        <th scope="col">Quantity</th>
+                                        <th scope="col">Unit</th>
+                                        <th scope="col">Category</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <!-- Rendered Dynamically -->
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="item-list-table ">
+                <p id="showItemName"></p>
+                <table id="selectedItemsTable" class="table table-striped table-bordered">
+                    <thead>
+                      <tr class="table-dark">
+                        <th scope="col" class="text-center">#</th>
+                        <th scope="col" class="col-lg-4">Trans. Type</th>
+                        <th scope="col" class="col-lg-2">Qty Change</th>
+                        <th scope="col" class="col-lg-1">Cost Impact</th>
+                        <th scope="col" class="col-lg-1">Change Date</th>
+                        <th scope="col" class="col-lg-2">Lot ID</th>
+                        <th scope="col" class="col-lg-2">User</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        <!-- the rest of the table is rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <footer>
+        <div class="dev">
+            <p>Powered by ShopKeeper 👨‍💻 Tel: 08137328131</p>
+        </div>
+    </footer>
+    <script>
+        window.userId = <%= locals.user ? JSON.stringify(user.id) : 'null' %>;
+    </script>
+    <script src="/dom/productTrackerDom.js"></script>
+    <script src="/assets/bootstrap/js/bootstrap.min.js"></script>
+</body>
+</html>
