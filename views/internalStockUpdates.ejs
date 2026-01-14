@@ -5,105 +5,108 @@
         <p class="failure-msg"><%= failure_msg %></p>
     </div>
     <div class="searchFilters bg-primary">
-        <form class="" id="searchForm" action="" method="post">
-            <!-- Button trigger modal -->
-            <button class="btn btn-dark w-50" type="submit" data-bs-toggle="modal" data-bs-target="#staticBackdrop">Search <i class="fa-solid fa-search"></i></button>
+        <form id="searchForm" action="" method="post" class="d-flex align-items-center gap-2 p-2">
+            <button class="btn btn-dark" type="submit" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+                Search <i class="fa-solid fa-search"></i>
+            </button>
             <input id="itemName" class="form-control border-dark" type="text" name="itemName" placeholder="Enter the item name">
             <select id="category" class="form-control border-dark" name="category">
                 <option hidden disabled selected value>(Select a Category)</option>
                 <% if(locals.categories){ %>
-                <% categories.forEach((ctg) => { %>
-                <option value="<%= ctg %>"><%= ctg %></option>
-                <% }) %>
+                    <% categories.forEach((ctg) => { %>
+                        <option value="<%= ctg %>"><%= ctg %></option>
+                    <% }) %>
                 <% } %>
             </select>
-            <input id="minPrice" class="form-control border-dark" type="text" name="minPrice" placeholder="Enter min price">
-            <input id="maxPrice" class="form-control border-dark" type="text" name="maxPrice" placeholder="Enter max price">
+            <input id="minPrice" class="form-control border-dark" type="text" name="minPrice" placeholder="Min price">
+            <input id="maxPrice" class="form-control border-dark" type="text" name="maxPrice" placeholder="Max price">
         </form>
     </div>
+
     <div class="tableSection">
-        <!-- Modal -->
-        <div class="modal fade col-lg-10" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 class="modal-title fs-5" id="staticBackdropLabel">Select an item</h1>
+                        <h1 class="modal-title fs-5">Select an item</h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <table id="searchResultsTable" class="table table-bordered">
                             <thead>
-                            <tr>
-                                <th scope="col">Action</th>
-                                <th scope="col">Item Name</th>
-                                <th scope="col">Quantity</th>
-                                <th scope="col">Unit</th>
-                                <th scope="col">Category</th>
-                            </tr>
+                                <tr>
+                                    <th scope="col">Action</th>
+                                    <th scope="col">Item Name</th>
+                                    <th scope="col">Stock Qty</th>
+                                    <th scope="col">Unit</th>
+                                    <th scope="col">Category</th>
+                                </tr>
                             </thead>
-                            <tbody>
-                                <!-- Rows will be populated dynamically -->
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
                 </div>
             </div>
         </div>
-        <% if(locals.returnsPage){ %> <h3>Process Returns</h3> <% } %>
-        <% if(locals.expiredDrugsPage){ %> <h3 id="processExpired">Process Expired Items</h3> <% } %>
-        <% if(locals.officeUsePage){ %> <h3>Process Office Use</h3> <% } %>
-        <% if(locals.damagedDrugsPage){ %> <h3>Process Damaged Items</h3> <% } %>
+
+        <div class="mt-3 text-center">
+            <% if(locals.returnsPage){ %> <h3>Process Returns</h3> <% } %>
+            <% if(locals.expiredDrugsPage){ %> <h3 id="processExpired">Process Expired Items</h3> <% } %>
+            <% if(locals.officeUsePage){ %> <h3>Process Office Use</h3> <% } %>
+            <% if(locals.damagedDrugsPage){ %> <h3>Process Damaged Items</h3> <% } %>
+        </div>
+
         <div class="item-list-table mt-3">
             <table id="selectedItemsTable" class="table table-striped table-bordered">
                 <thead>
                   <tr class="table-dark">
-                    <th scope="col" class="text-center">#</th>
-                    <th scope="col" class="col-lg-4">Item Name</th>
-                    <th scope="col" class="col-lg-1">Quantity</th>
-                    <th scope="col" class="col-lg-1">Unit</th>
-                    <th scope="col" class="col-lg-1">Unit Cost</th>
-                    <th scope="col" class="col-lg-1">Unit Price</th>
-                    <th scope="col" class="col-lg-1">Total Cost</th>
-                    <th scope="col" class="col-lg-1">Total Price</th>
-                    <th scope="col" class="col-lg-1">Expiry Date</th>
-                    <th scope="col" class="">Actions</th>
+                    <th scope="col">#</th>
+                    <th scope="col" class="col-lg-3">Item Name</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Unit</th>
+                    <th scope="col">Unit Cost</th>
+                    <th scope="col">Unit Price</th>
+                    <th scope="col">Total Cost</th>
+                    <th scope="col">Total Price</th>
+                    <th scope="col">Expiry</th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                    <!-- the rest of the table is rendered dynamically -->
-                </tbody>
+                <tbody></tbody>
             </table>
-            <div class="d-flex align-center justify-content-around bg-dark text-white p-3 mb-3">
-                <div>
-                    <label for="supplierSelect">Select the supplier</label>
+            
+            <div class="d-flex align-items-center justify-content-between bg-dark text-white p-3 mb-3">
+                <div class="col-lg-4">
+                    <label for="supplierSelect">Select Supplier (Optional)</label>
                     <select name="supplierId" id="supplierSelect" class="form-control">
-                        <option hidden disabled selected value>(Select Supplier)</option>
+                        <option value="0">Default Supplier</option>
                         <% if(locals.suppliers){ %>
-                        <% suppliers.forEach((supplier) => { %>
-                        <option value="<%= supplier.id %>"><%= supplier.name %></option>
-                        <% }) %>
+                            <% suppliers.forEach((supplier) => { %>
+                                <option value="<%= supplier.id %>"><%= supplier.name %></option>
+                            <% }) %>
                         <% } %>
                     </select>
                 </div>
-                <div class="col-lg-3 text-end">
-                    <p>Total Items: <span id="totalItems">0</span></p>
-                    <p>Total Cost: <span id="totalCost">0.00</span></p>
-                    <p>Total Price: <span id="totalPrice">0.00</span></p>
+                <div class="text-end">
+                    <p class="mb-1">Total Items: <span id="totalItems">0</span></p>
+                    <p class="mb-1">Grand Total Cost: <span id="totalCost">0.00</span></p>
+                    <p class="mb-0">Grand Total Price: <span id="totalPrice">0.00</span></p>
                 </div>
             </div>
         </div>
-        <div class="d-flex justify-content-between container-fluid">
-                <div class="form">
-                    <% if(locals.returnsPage){ %><form id="saveReturn" action="" method=""><% } %>
-                    <% if(locals.expiredDrugsPage){ %><form id="saveExpired" action="" method=""><% } %>
-                    <% if(locals.officeUsePage){ %><form id="saveOfficeUse" action="" method=""><% } %>
-                    <% if(locals.damagedDrugsPage){ %><form id="saveDamaged" action="" method=""><% } %>
-                        <input type="hidden" name="arrayData" class="arrayInput">
-                        <button type="submit" class="btn btn-success">Save <i class="fa-solid fa-save"></i></button>
-                        <button class="btn btn-warning">Save & Print <i class="fa-solid fa-print"></i></button>
-                    </form>
-                </div>
-            <div class="">
+
+        <div class="d-flex justify-content-between container-fluid pb-5">
+            <div class="form-group">
+                <% if(locals.returnsPage){ %><form class="inventory-form" id="saveReturn" action="/api/process-return" method="post"><% } %>
+                <% if(locals.expiredDrugsPage){ %><form class="inventory-form" id="saveExpired" action="/api/process-expired" method="post"><% } %>
+                <% if(locals.officeUsePage){ %><form class="inventory-form" id="saveOfficeUse" action="/api/process-office-use" method="post"><% } %>
+                <% if(locals.damagedDrugsPage){ %><form class="inventory-form" id="saveDamaged" action="/api/process-damaged" method="post"><% } %>
+                    <input type="hidden" name="arrayData" class="arrayInput">
+                    <button type="submit" class="btn btn-success">Save <i class="fa-solid fa-save"></i></button>
+                    <button type="button" class="btn btn-warning" onclick="window.print()">Print <i class="fa-solid fa-print"></i></button>
+                </form>
+            </div>
+            <div>
                 <button onclick="clearSelectedItems()" class="btn btn-danger">Clear all <i class="fa-solid fa-trash"></i></button>
             </div>
         </div>

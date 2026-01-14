@@ -475,127 +475,63 @@ app.post("/api/process-purchase", async (req, res) => {
 
 // Process Returns
 app.post("/api/process-return", async (req, res) => {
-    // const userId = req.user.id;
-    const userId = 1; //temporary placeholder
-    const data = req.body.requestData;
-
+    const userId = 1; // Placeholder
+    const client = await db.connect();
     try {
-        const result = await saveReturn(db, res, userId, data);
-
-        if (result && result.stockChangeId) {
-            res.status(201).json({
-                success: true,
-                message: `Return successfully processed!`
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "Return could not be saved. Invalid data or internal issue.",
-            });
-        }
+        await client.query('BEGIN');
+        await saveReturn(client, userId, req.body);
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Return processed successfully!" });
     } catch (err) {
-        console.error('Return processing error:', err);
-
-        res.status(500).json({
-            success: false,
-            message: `Failed to process Return: ${err.message}`,
-            error: err.message
-        });
-    }
-})
+        await client.query('ROLLBACK');
+        res.status(err.status || 500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
 
 // Process Damaged items
 app.post("/api/process-damaged", async (req, res) => {
-    // const userId = req.user.id;
-    const userId = 1; //temporary placeholder
-    const data = req.body.requestData;
-
+    const userId = 1; 
+    const client = await db.connect();
     try {
-        const result = await removeDamagedStock(db, res, userId, data);
-
-        if (result && result.stockChangeId) {
-            res.status(201).json({
-                success: true,
-                message: `Damaged items successfully processed!`
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "Damaged items could not be saved. Invalid data or internal issue.",
-            });
-        }
+        await client.query('BEGIN');
+        await removeStock(client, userId, req.body, 'Damaged');
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Damaged items recorded!" });
     } catch (err) {
-        console.error('Damaged items processing error:', err);
-
-        res.status(500).json({
-            success: false,
-            message: `Failed to process Damaged items: ${err.message}`,
-            error: err.message
-        });
-    }
-})
+        await client.query('ROLLBACK');
+        res.status(err.status || 500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
 
 // Process Office Use
 app.post("/api/process-officeUse", async (req, res) => {
-    // const userId = req.user.id;
-    const userId = 1; //temporary placeholder
-    const data = req.body.requestData;
-
+    const userId = 1;
+    const client = await db.connect();
     try {
-        const result = await saveOfficeUse(db, res, userId, data);
-
-        if (result && result.stockChangeId) {
-            res.status(201).json({
-                success: true,
-                message: `Office use successfully processed!`
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "Office use could not be saved. Invalid data or internal issue.",
-            });
-        }
+        await client.query('BEGIN');
+        await removeStock(client, userId, req.body, 'OfficeUse');
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Office use recorded!" });
     } catch (err) {
-        console.error('Office use processing error:', err);
-
-        res.status(500).json({
-            success: false,
-            message: `Failed to process Office use: ${err.message}`,
-            error: err.message
-        });
-    }
-})
+        await client.query('ROLLBACK');
+        res.status(err.status || 500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
 
 // Process Expired items
 app.post("/api/process-expired", async (req, res) => {
-    // const userId = req.user.id;
-    const userId = 1; //temporary placeholder
-    const data = req.body.requestData;
-
+    const userId = 1;
+    const client = await db.connect();
     try {
-        const result = await removeExpiredStock(db, res, userId, data);
-
-        if (result && result.stockChangeId) {
-            res.status(201).json({
-                success: true,
-                message: `Return successfully processed!`
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "Return could not be saved. Invalid data or internal issue.",
-            });
-        }
+        await client.query('BEGIN');
+        await removeStock(client, userId, req.body, 'Expired');
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Expired items cleared!" });
     } catch (err) {
-        console.error('Return processing error:', err);
-
-        res.status(500).json({
-            success: false,
-            message: `Failed to process Return: ${err.message}`,
-            error: err.message
-        });
-    }
-})
+        await client.query('ROLLBACK');
+        res.status(err.status || 500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
 
 //********Register new / Edit user 
 app.post("/editUser", async (req, res) => {
