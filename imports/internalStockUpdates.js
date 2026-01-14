@@ -39,7 +39,7 @@ async function saveReturn(client, userId, data) {
             oldQty: newTotal - quantity,
             newQty: newTotal,
             changeType: 'Return',
-            costImpact: -(quantity * lot.cost_per_unit), // Value added back to stock
+            costImpact: quantity * lot.cost_per_unit, // Value added back to stock
             userId,
             lotId: lot.lot_id
         });
@@ -83,7 +83,7 @@ async function removeStock(client, userId, data, type) {
                 oldQty: newTotal + take,
                 newQty: newTotal,
                 changeType: type,
-                costImpact: take * lot.cost_per_unit,
+                costImpact: -(take * lot.cost_per_unit),
                 userId,
                 lotId: lot.lot_id
             });
