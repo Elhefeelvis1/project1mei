@@ -1,4 +1,4 @@
-export default async function logStockTransaction(client, { 
+export default async function logStockTransaction(client, {
     productId, 
     changeAmount, 
     oldQty, 

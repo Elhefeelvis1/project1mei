@@ -20,8 +20,9 @@ import checkTransaction from './imports/checkTransaction.js';
 // importing addPurchase function
 import savePurchase from './imports/addPurchase.js';
 // importing internal stock updates
-import {saveReturn, removeExpiredStock, saveOfficeUse, removeDamagedStock} from './imports/internalStockUpdates.js';
-
+import {saveReturn, removeStock} from './imports/internalStockUpdates.js';
+// Importing adjustment logic
+import adjustment from './imports/adjustmentLogic.js';
 
 const app = express();
 const port = 3000;
@@ -123,6 +124,17 @@ app.get("/dashboard", async (req, res) => {
     //     res.render("adminlogin.ejs");
     // }
 })
+
+// Stock Page
+app.get("/stockPage", async (req, res) => {
+    const categories = await db.query('SELECT name FROM categories');
+    const units = await db.query('SELECT name FROM units');
+    res.render("stockPage.ejs", {
+        user: req.user,
+        categories: categories.rows,
+        units: units.rows,
+    });
+})
 app.get("/purchasePage", async (req, res) => {
     // if(req.isAuthenticated()){
     //     console.log(req.user)
@@ -185,33 +197,33 @@ app.get("/productTracker", async (req, res) => {
 app.get("/returnsPage", (req, res) => {
     res.render('internalStockUpdates.ejs', {
         returnsPage : true,
-        expiredDrugsPage: false,
+        expiredItemsPage: false,
         officeUsePage: false,
-        damagedDrugsPage: false
+        damagedItemsPage: false
     })
 })
-app.get("/expiredDrugsPage", (req, res) => {
+app.get("/expiredItemsPage", (req, res) => {
     res.render('internalStockUpdates.ejs', {
         returnsPage : false,
-        expiredDrugsPage: true,
+        expiredItemsPage: true,
         officeUsePage: false,
-        damagedDrugsPage: false
+        damagedItemsPage: false
     })
 })
 app.get("/officeUsePage", (req, res) => {
     res.render('internalStockUpdates.ejs', {
         returnsPage : false,
-        expiredDrugsPage: false,
+        expiredItemsPage: false,
         officeUsePage: true,
-        damagedDrugsPage: false
+        damagedItemsPage: false
     })
 })
-app.get("/damagedDrugsPage", (req, res) => {
+app.get("/damagedItemsPage", (req, res) => {
     res.render('internalStockUpdates.ejs', {
         returnsPage : false,
-        expiredDrugsPage: false,
+        expiredItemsPage: false,
         officeUsePage: false,
-        damagedDrugsPage: true
+        damagedItemsPage: true
     })
 })
 // User log in
@@ -352,6 +364,55 @@ app.get("/api/track-product", async (req, res) => {
     }
 });
 
+// Fetch all stocks
+app.get("/api/all-inventory", async (req, res) => {
+    try{
+        const result = await db.query(`
+            SELECT 
+                ast.id,
+                ast.name,
+                ast.generic_name,
+                ast.last_cost_price,
+                ast.unit_selling_price,
+                units.name AS unit,
+                ctg.name AS category,
+                ast.reorder_level,
+                ast.description,
+                ast.total_quantity_in_stock,
+                ast.entry_date,
+                ast.last_updated_date
+            FROM all_stocks ast
+            LEFT JOIN units ON ast.unit_id = units.id
+            LEFT JOIN categories ctg ON ast.category_id = ctg.id
+            ORDER BY ast.name ASC
+            `);
+
+        const inventory = result.rows;
+
+        if(inventory.length > 0){
+            res.json({
+                success: true,
+                message: `${inventory.length} items(s) found!`,
+                contents: inventory
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: "No inventory items found.",
+                contents: []
+            });
+        }
+    }catch(error){
+        console.error('Database query error:', error);
+        res.status(500).json({
+            success: false,
+            message: `Couldn't retrieve data: ${error.message}`,
+            error: error.message
+        });
+    }
+
+})
+
 // Save Sale
 app.post("/api/process-sale", async (req, res) => {
     // const userId = req.user.id;
@@ -384,8 +445,6 @@ app.post("/api/process-sale", async (req, res) => {
             error: err.message 
         });
     }
-
-    // console.log(sales.saveSale(saleData)); 
 });
 
 // ********Transaction checking
@@ -438,38 +497,35 @@ app.post("/searchTransactions", async (req, res) => {
             users: userData.rows,
         });
     }
-})
+});
 
-// Process Purchase
-app.post("/api/process-purchase", async (req, res) => {
-    // const userId = req.user.id;
-    const userId = 1; // Temporary hardcoded user ID for testing
-    const purchaseData = req.body;
+// Stock adjustments
+app.post('/api/process-adjustments', async (req, res) => {
+    const userId = 1; 
+    const { items } = req.body;
 
+    if (!items || items.length === 0) {
+        return res.status(400).json({ error: "No items provided." });
+    }
+
+    const client = await db.connect();
     try {
-        const newPurchase = await savePurchase(userId, purchaseData, db, res);
+        const result = await adjustment(client, userId, items);
 
-        if (newPurchase && newPurchase.purchaseId) {
-            res.status(201).json({
+        if (result.success) {
+            res.status(200).json({
                 success: true,
-                message: `Purchase successfully processed!`,
-                contents: newPurchase
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                message: "Purchase could not be saved. Invalid data or internal issue.",
-                contents: {}
+                message: "Adjustments processed successfully",
             });
         }
     } catch (err) {
-        console.error('Purchase processing error:', err);
-
-        res.status(500).json({
+        console.error('Adjustment processing error:', err);
+        res.status(500).json({ 
             success: false,
-            message: `Failed to process purchase: ${err.message}`,
-            error: err.message
+            message: `Failed to process adjustments: ${err.message}`
         });
+    } finally {
+        client.release();
     }
 });
 

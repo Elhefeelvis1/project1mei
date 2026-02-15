@@ -49,8 +49,6 @@ function renderSearchResults(items) {
         row.insertCell().textContent = item.unit_name;
         row.insertCell().textContent = item.category_name;
     });
-
-    console.log(items)
 }
 
 // Function to add item to client-side cart and render cart table

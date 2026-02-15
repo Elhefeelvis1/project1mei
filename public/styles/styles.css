@@ -356,6 +356,34 @@ i{
     margin-left: 350px;
 }
 
+/* Stock Page Pagination */
+#paginationControls {
+    gap: 5px;
+    padding: 20px 0;
+}
+
+#paginationControls .btn {
+    min-width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+#paginationControls .btn:hover:not(.disabled) {
+    background-color: #0d6efd;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.custom-table-hover tbody tr:hover{
+    background-color: #000;
+    color: white;
+}
+
+/* Mobile view */
 @media screen and (max-width: 850px) {
     .mainDashboard .bodyDiv{
         width: 100%;

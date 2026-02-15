@@ -42,7 +42,7 @@ export default async function checkTransaction(startDate, endDate, transactionTy
             sc.change_date AS transaction_date,
             ast.name AS product_name,
             sc.quantity_change,
-            sc.new_quantity_on_hand,
+            sc.new_quantity,
             sc.cost_impact,
             u.username AS transacted_by,
             CASE
