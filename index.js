@@ -1,9 +1,7 @@
 import express from 'express';
-import ejs from 'ejs';
 import session from 'express-session';
 import passport from 'passport';
 import { Strategy } from "passport-local";
-import flash from "connect-flash";
 import env from "dotenv";
 import bcrypt from 'bcrypt';
 
@@ -32,24 +30,17 @@ env.config();
 app.use(express.json()); // To parse JSON bodies
 app.use(express.urlencoded({extended: true}));
 app.use(express.static("public"));
+
 // Express Session
 app.use(session({
-    secret: process.env.SECRET_SESSION,
+    secret: process.env.SECRET_SESSION || 'fallback-secret',
     resave: false,
     saveUninitialized: true,
     cookie: {
         maxAge: 1000 * 60 * 60 * 24
     } //24hrs cookie
 }));
-// Flash Messages Middleware
-app.use(flash());
-// Make flash messages available in all templates
-app.use((req, res, next) => {
-    res.locals.success_msg = req.flash('success_msg');
-    res.locals.failure_msg = req.flash('failure_msg');
-   
-    next();
-});
+
 // Passport Middleware
 app.use(passport.initialize());
 app.use(passport.session());
@@ -57,211 +48,131 @@ app.use(passport.session());
 // Global functions
 function addLabel(name, tableName, req, res){
     if(addEdit.addNew(name, tableName, db)){
-        req.flash('success_msg', `New ${name} successfully added to ${tableName}`)
-        res.redirect("/dashboard");
+        res.status(201).json({ success: true, message: `New ${name} successfully added to ${tableName}` });
     }else{
-        req.flash('failure_msg', `${name} not added, try again!`)
-        res.redirect("/dashboard");
+        res.status(400).json({ success: false, message: `${name} not added, try again!` });
     }
 }
 
 function editLabel(name, id, tableName, req, res){
     if(addEdit.addNew(name, id, tableName, db)){
-        req.flash('success_msg', `${name} successfully edited in ${tableName}`)
-        res.redirect("/dashboard");
+        res.status(200).json({ success: true, message: `${name} successfully edited in ${tableName}` });
     }else{
-        req.flash('failure_msg', `${name} not edited, try again!`)
-        res.redirect("/dashboard");
+        res.status(400).json({ success: false, message: `${name} not edited, try again!` });
     }
 }
 
 //Starting database connection
 db.connect();
 
-app.get("/", (req, res) => {
-    res.render("index.ejs", {
-        user: req.user
-    });
+// API ROUTES
+
+app.get("/api/me", (req, res) => {
+    if (req.isAuthenticated()) {
+        res.json({ authenticated: true, user: req.user });
+    } else {
+        res.status(401).json({ authenticated: false });
+    }
 });
-app.get("/salesPage", async (req, res) => {
-    // if(req.isAuthenticated()){
+
+app.get("/api/salesPage", async (req, res) => {
+    try {
         const categories = await db.query('SELECT name FROM categories');
         const banks = await db.query('SELECT * FROM banks');
         const customers = await db.query('SELECT id, name FROM customers');
 
-        res.render("salesPage.ejs", {
-            user: req.user,
+        res.json({
             categories: categories.rows,
             banks: banks.rows,
             customers: customers.rows
         });
-    // }else{
-//         res.render("saleslogin.ejs");
-//     }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-app.get("/dashboard", async (req, res) => {
-    // if(req.isAuthenticated()){
-    //     console.log(req.user)
-    //     if(req.user.role === "administrator"){
-            const allUsers = await db.query('SELECT username, role FROM users');
-            const sales = await db.query("SELECT ast.name, change_type, quantity_change, unit_selling_price, last_cost_price FROM stock_changes AS sc JOIN all_stocks AS ast ON sc.product_id = ast.id WHERE sc.change_type = 'Sales' ORDER BY change_date DESC LIMIT 15");
-            const purchases = await db.query("SELECT ast.name, pli.quantity_purchased, TO_CHAR(pli.purchase_date, 'YYYY-MM-DD') AS purchase_date FROM purchase_line_items AS pli JOIN all_stocks AS ast ON pli.product_id = ast.id ORDER BY purchase_date DESC LIMIT 5");
 
-            console.log(allUsers.rows)
-            res.render("dashboard.ejs", {
-                user: req.user,
-                users: allUsers.rows,
-                recentSales: sales.rows, 
-                recentPurchases: purchases.rows,
-            }); 
-    //     }
-    //     else{
-    //         res.render("saleslogin.ejs", {
-    //             errorMessage: "User not an Admin"
-    //         });
-    //     }
-    // }else{
-    //     res.render("adminlogin.ejs");
-    // }
-})
+app.get("/api/dashboard", async (req, res) => {
+    try {
+        const allUsers = await db.query('SELECT username, role FROM users');
+        const salesData = await db.query("SELECT ast.name, change_type, quantity_change, unit_selling_price, last_cost_price FROM stock_changes AS sc JOIN all_stocks AS ast ON sc.product_id = ast.id WHERE sc.change_type = 'Sales' ORDER BY change_date DESC LIMIT 15");
+        const purchases = await db.query("SELECT ast.name, pli.quantity_purchased, TO_CHAR(pli.purchase_date, 'YYYY-MM-DD') AS purchase_date FROM purchase_line_items AS pli JOIN all_stocks AS ast ON pli.product_id = ast.id ORDER BY purchase_date DESC LIMIT 5");
+
+        res.json({
+            users: allUsers.rows,
+            recentSales: salesData.rows, 
+            recentPurchases: purchases.rows,
+        }); 
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Stock Page
-app.get("/stockPage", async (req, res) => {
-    const categories = await db.query('SELECT name FROM categories');
-    const units = await db.query('SELECT name FROM units');
-    res.render("stockPage.ejs", {
-        user: req.user,
-        categories: categories.rows,
-        units: units.rows,
-    });
-})
-app.get("/purchasePage", async (req, res) => {
-    // if(req.isAuthenticated()){
-    //     console.log(req.user)
-    //     if(req.user.role === "administrator"){
-            try{
-                const result = await db.query('SELECT * FROM suppliers');
-                res.render("purchase.ejs", {
-                    user: req.user,
-                    suppliers: result.rows
-                });
-            }catch(err){
-                console.error('Database query error:', err);
-                res.status(500).json({
-                    success: false,
-                    message: `Couldn't retrieve suppliers: ${err.message}`,
-                    error: err.message
-                });
-            }
-    //     }
-    //     else{
-    //         res.render("saleslogin.ejs", {
-    //             errorMessage: "User not an Admin"
-    //         });
-    //     }
-    // }else{
-    //     res.render("adminlogin.ejs");
-    // }
-})
+app.get("/api/stockPage", async (req, res) => {
+    try {
+        const categories = await db.query('SELECT name FROM categories');
+        const units = await db.query('SELECT name FROM units');
+        res.json({
+            categories: categories.rows,
+            units: units.rows,
+        });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get("/api/purchasePage", async (req, res) => {
+    try{
+        const result = await db.query('SELECT * FROM suppliers');
+        res.json({
+            suppliers: result.rows
+        });
+    }catch(err){
+        console.error('Database query error:', err);
+        res.status(500).json({
+            success: false,
+            message: `Couldn't retrieve suppliers: ${err.message}`,
+            error: err.message
+        });
+    }
+});
 
 // Get transactions
-app.get("/transactionPage", async (req, res) => {
-    // if(req.isAuthenticated()){
-           const userData = await db.query('SELECT id, username FROM users');
-    //     if(req.user.role === "administrator"){
-            res.render("transactions.ejs", {
-                users: userData.rows,
-            });
-    //     }
-    //     else{
-    //         res.render("saleslogin.ejs", {
-    //             errorMessage: "User not an Admin"
-    //         });
-    //     }
-    // }else{
-    //     res.render("adminlogin.ejs");
-    // }
+app.get("/api/transactionPage", async (req, res) => {
+    try {
+        const userData = await db.query('SELECT id, username FROM users');
+        res.json({
+            users: userData.rows,
+        });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Product Tracker
-app.get("/productTracker", async (req, res) => {
-    // Fetch Categories
-    const categories = await db.query('SELECT name FROM categories');
-
-    res.render('productTracker.ejs', {
-        categories: categories.rows
-    })
-})
-
-// Admin Updates
-app.get("/returnsPage", (req, res) => {
-    res.render('internalStockUpdates.ejs', {
-        returnsPage : true,
-        expiredItemsPage: false,
-        officeUsePage: false,
-        damagedItemsPage: false
-    })
-})
-app.get("/expiredItemsPage", (req, res) => {
-    res.render('internalStockUpdates.ejs', {
-        returnsPage : false,
-        expiredItemsPage: true,
-        officeUsePage: false,
-        damagedItemsPage: false
-    })
-})
-app.get("/officeUsePage", (req, res) => {
-    res.render('internalStockUpdates.ejs', {
-        returnsPage : false,
-        expiredItemsPage: false,
-        officeUsePage: true,
-        damagedItemsPage: false
-    })
-})
-app.get("/damagedItemsPage", (req, res) => {
-    res.render('internalStockUpdates.ejs', {
-        returnsPage : false,
-        expiredItemsPage: false,
-        officeUsePage: false,
-        damagedItemsPage: true
-    })
-})
-// User log in
-app.get("/adminlogin", (req, res) => {
-    const errorMessage = req.flash('error');
-
-    res.render('adminlogin.ejs', {
-        errorMessage: errorMessage.length ? errorMessage[0] : null
-    });
-});
-app.get('/saleslogin', (req, res) => {
-    // Get flash messages
-    const errorMessage = req.flash('error');
-    
-    res.render('saleslogin.ejs', {
-        errorMessage: errorMessage.length ? errorMessage[0] : null
-    });
+app.get("/api/productTracker", async (req, res) => {
+    try {
+        const categories = await db.query('SELECT name FROM categories');
+        res.json({
+            categories: categories.rows
+        });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // *********Sales processing
-// step 1: getting the list of items from a search
 app.get("/api/searchItems", async (req, res) => {
-    // 1. Read parameters from req.query (since frontend uses a GET request with query params)
     const{itemName, category, minPrice, maxPrice} = req.query;
-
     try{
-        // Execute the database search
         const data = await sales.searchDb(itemName, category, minPrice, maxPrice, db);
-        
         if(data.length > 0){
-            // Success: Return the search results as JSON
             res.json({
                 success: true,
                 message: `${data.length} item(s) found!`,
-                contents: data // The array of search results
+                contents: data
             });
         } else {
-            // No results found: Return a failure message as JSON
             res.status(404).json({  
                 success: false,
                 message: "Item not found, check the name or criteria!",
@@ -269,8 +180,6 @@ app.get("/api/searchItems", async (req, res) => {
             });
         }
     } catch(err){
-        console.error('Database query error:', err);
-        // Server error: Return a 500 status with an error message
         res.status(500).json({ 
             success: false,
             message: `Couldn't search for item: ${err.message}`,
@@ -282,7 +191,6 @@ app.get("/api/searchItems", async (req, res) => {
 // Search customers
 app.get("/api/searchCustomers", async (req, res) => {
     const customerName = req.query.customerName;
-
     try{
         const result = await db.query('SELECT * FROM customers WHERE name ILIKE $1', [`%${customerName}%`])
         const data = result.rows;
@@ -299,22 +207,19 @@ app.get("/api/searchCustomers", async (req, res) => {
                 message: "",
                 contents: []
             });
-            console.log(data)
         }
-    }catch(error){
-        console.error('Database query error:', err);
+    }catch(err){
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve customers: ${err.message}`,
             error: err.message
         });
     }
-})
+});
 
 // Item Tracker
 app.get("/api/track-product", async (req, res) => {
     const { productId, startDate, stopDate } = req.query; 
-
     try {
         const queryText = `
             SELECT 
@@ -333,11 +238,8 @@ app.get("/api/track-product", async (req, res) => {
                 AND sc.change_date < ($3::date + '1 day'::interval)
             ORDER BY sc.change_date DESC;
         `;
-
         const values = [parseInt(productId), startDate, stopDate];
-
         const result = await db.query(queryText, values);
-
         const data = result.rows;
 
         if(data.length > 0){
@@ -353,9 +255,7 @@ app.get("/api/track-product", async (req, res) => {
                 contents: []
             });
         }
-
     }catch(error){
-        console.error('Database query error:', error);
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve data: ${error.message}`,
@@ -403,26 +303,111 @@ app.get("/api/all-inventory", async (req, res) => {
             });
         }
     }catch(error){
-        console.error('Database query error:', error);
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve data: ${error.message}`,
             error: error.message
         });
     }
+});
 
-})
+// Track Product
+app.get("/api/track-product", async (req, res) => {
+    const { productId, startDate, stopDate } = req.query;
+    try {
+        const result = await db.query(`
+            SELECT sc.*, u.username 
+            FROM stock_changes sc
+            LEFT JOIN users u ON sc.user_id = u.id
+            WHERE sc.product_id = $1 
+            AND sc.change_date >= $2 
+            AND sc.change_date < ($3::date + interval '1 day')
+            ORDER BY sc.change_date DESC
+        `, [productId, startDate, stopDate]);
+        res.json({ success: true, contents: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Internal Updates
+app.post("/api/process-return", async (req, res) => {
+    const userId = req.user ? req.user.id : 1; 
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        await saveReturn(client, userId, req.body);
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Return processed successfully!" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
+
+app.post("/api/process-expired", async (req, res) => {
+    const userId = req.user ? req.user.id : 1; 
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        await removeStock(client, userId, req.body, "Expired");
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Expired items processed successfully!" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
+
+app.post("/api/process-office-use", async (req, res) => {
+    const userId = req.user ? req.user.id : 1; 
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        await removeStock(client, userId, req.body, "Office Use");
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Office use processed successfully!" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
+
+app.post("/api/process-damaged", async (req, res) => {
+    const userId = req.user ? req.user.id : 1; 
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        await removeStock(client, userId, req.body, "Damaged");
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Damaged items processed successfully!" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
+
+// Process Purchase
+app.post("/api/process-purchase", async (req, res) => {
+    const userId = req.user ? req.user.id : 1; 
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        await savePurchase(client, userId, req.body);
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: "Purchase processed successfully!" });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        res.status(err.status || 500).json({ success: false, message: err.message });
+    } finally { client.release(); }
+});
 
 // Save Sale
 app.post("/api/process-sale", async (req, res) => {
-    // const userId = req.user.id;
-    const userId = 1; // Temporary hardcoded user ID for testing
-
+    const userId = req.user ? req.user.id : 1; 
     const saleData = req.body;
-
     try {
         const newSale = await sales.saveSale(userId, saleData, db, res); 
-
         if (newSale && newSale.saleId) { 
             res.status(201).json({
                 success: true,
@@ -437,8 +422,6 @@ app.post("/api/process-sale", async (req, res) => {
             });
         }
     } catch (err) {
-        console.error('Sale processing error:', err);
-       
         res.status(500).json({ 
             success: false,
             message: `Failed to process sale: ${err.message}`,
@@ -448,60 +431,52 @@ app.post("/api/process-sale", async (req, res) => {
 });
 
 // ********Transaction checking
-app.post("/searchTransactions", async (req, res) => {
+app.post("/api/searchTransactions", async (req, res) => {
     const { startDate, endDate, transactionType, userId } = req.body;
+    try {
+        const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
+        const userData = await db.query('SELECT id, username FROM users');
 
-    console.log(transactionType, userId)
+        if(Array.isArray(data) && data.length > 0){
+            const transactionsWithRevenue = data.map(transaction => {
+                if (transaction.change_type === 'Sales') {
+                    const price = parseFloat(transaction.selling_price_per_unit);
+                    const quantity = Math.abs(transaction.quantity_change); 
+                    transaction.gross_revenue_impact = (price * quantity).toFixed(2);
+                } else {
+                    transaction.gross_revenue_impact = null;
+                }
+                return transaction;
+            });
 
-    const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
-    const userData = await db.query('SELECT id, username FROM users');
+            const totalSalesRevenue = transactionsWithRevenue.reduce((acc, curr) => {   
+                return acc + (parseFloat(curr.gross_revenue_impact) || 0);
+            }, 0);
 
-    if(Array.isArray(data) && data.length > 0){
-        const transactionsWithRevenue = data.map(transaction => {
-            if (transaction.change_type === 'Sales') {
-                const price = parseFloat(transaction.selling_price_per_unit);
-                // quantity_change is negative for sales, using Math.abs()
-                const quantity = Math.abs(transaction.quantity_change); 
-                
-                transaction.gross_revenue_impact = (price * quantity).toFixed(2);
-            } else {
-                transaction.gross_revenue_impact = null;
-            }
-            
-            // We can delete the temp fie vbbvld or keep it for debugging.
-            return transaction;
-        });
+            const totalDiscount = transactionsWithRevenue.reduce((acc, curr) => {   
+                return acc + (parseFloat(curr.sale_discount) || 0);
+            }, 0);
 
-        const totalSalesRevenue = transactionsWithRevenue.reduce((acc, curr) => {   
-            return acc + (parseFloat(curr.gross_revenue_impact) || 0);
-        }, 0);
-
-        const totalDiscount = transactionsWithRevenue.reduce((acc, curr) => {   
-            return acc + (parseFloat(curr.sale_discount) || 0);
-        }, 0);
-
-        res.render('transactions.ejs', {
-            contents: transactionsWithRevenue,
-            totalSalesRevenue: totalSalesRevenue.toFixed(2),
-            totalDiscount: totalDiscount.toFixed(2),
-            users: userData.rows,
-        })
-    }else if(!Array.isArray(data)){
-        res.render('transactions.ejs', {
-            message: data,
-            users: userData.rows,
-        });
-    }else{
-        res.render('transactions.ejs', {
-            message: "No transactions found for this timeline",
-            users: userData.rows,
-        });
+            res.json({
+                success: true,
+                contents: transactionsWithRevenue,
+                totalSalesRevenue: totalSalesRevenue.toFixed(2),
+                totalDiscount: totalDiscount.toFixed(2),
+                users: userData.rows,
+            });
+        } else if(!Array.isArray(data)){
+            res.status(400).json({ success: false, message: data });
+        } else {
+            res.status(404).json({ success: false, message: "No transactions found for this timeline" });
+        }
+    } catch(err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
 // Stock adjustments
 app.post('/api/process-adjustments', async (req, res) => {
-    const userId = 1; 
+    const userId = req.user ? req.user.id : 1; 
     const { items } = req.body;
 
     if (!items || items.length === 0) {
@@ -511,7 +486,6 @@ app.post('/api/process-adjustments', async (req, res) => {
     const client = await db.connect();
     try {
         const result = await adjustment(client, userId, items);
-
         if (result.success) {
             res.status(200).json({
                 success: true,
@@ -519,7 +493,6 @@ app.post('/api/process-adjustments', async (req, res) => {
             });
         }
     } catch (err) {
-        console.error('Adjustment processing error:', err);
         res.status(500).json({ 
             success: false,
             message: `Failed to process adjustments: ${err.message}`
@@ -531,7 +504,7 @@ app.post('/api/process-adjustments', async (req, res) => {
 
 // Process Returns
 app.post("/api/process-return", async (req, res) => {
-    const userId = 1; // Placeholder
+    const userId = req.user ? req.user.id : 1; 
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -546,7 +519,7 @@ app.post("/api/process-return", async (req, res) => {
 
 // Process Damaged items
 app.post("/api/process-damaged", async (req, res) => {
-    const userId = 1; 
+    const userId = req.user ? req.user.id : 1; 
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -561,7 +534,7 @@ app.post("/api/process-damaged", async (req, res) => {
 
 // Process Office Use
 app.post("/api/process-officeUse", async (req, res) => {
-    const userId = 1;
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -576,7 +549,7 @@ app.post("/api/process-officeUse", async (req, res) => {
 
 // Process Expired items
 app.post("/api/process-expired", async (req, res) => {
-    const userId = 1;
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -590,7 +563,7 @@ app.post("/api/process-expired", async (req, res) => {
 });
 
 //********Register new / Edit user 
-app.post("/editUser", async (req, res) => {
+app.post("/api/editUser", async (req, res) => {
     let id = req.body.userId;
     let username = req.body.username;
     let password = req.body.password;
@@ -598,10 +571,10 @@ app.post("/editUser", async (req, res) => {
 
     const queryParts = [];
     const params = [];
-    let paramCounter = 1; // Used for $1, $2, $3...
+    let paramCounter = 1;
 
     if (username) {
-        queryParts.push(`username = $${paramCounter}`); // Removed trailing comma
+        queryParts.push(`username = $${paramCounter}`);
         params.push(`${username}`);
         paramCounter++;
     }
@@ -612,10 +585,8 @@ app.post("/editUser", async (req, res) => {
             queryParts.push(`password = $${paramCounter}`);
             params.push(`${hash}`);
             paramCounter++;
-            console.log("Hashed password:", hash);
         } catch (err) {
-            console.error("Error hashing password", err);
-            return res.status(500).json({ error: "Failed to hash password" });
+            return res.status(500).json({ success: false, message: "Failed to hash password" });
         }
     }
 
@@ -626,97 +597,76 @@ app.post("/editUser", async (req, res) => {
     }
 
     let sqlQuery = 'UPDATE users SET ';
-
     if (queryParts.length > 0) {
         sqlQuery += queryParts.join(', ') + ' WHERE ' + `id = $${paramCounter}`;
         params.push(`${id}`);
     } else {
-        // If no fields to update (e.g., only ID provided without username, password, or role)
-        //send a 400 Bad Request.
-        return res.status(400).json({ error: "No fields provided for update." });
+        return res.status(400).json({ success: false, message: "No fields provided for update." });
     }
-
-    console.log('Generated SQL Query:', sqlQuery);
-    console.log('Parameters:', params);
 
     try {
         const result = await db.query(sqlQuery, params);
-        console.log('Database update result:', result.rows);
         if (result.rowCount > 0) {
-            req.flash('success_msg', "User Updated Successfully")
-            res.redirect("/dashboard");
+            res.json({ success: true, message: "User Updated Successfully" });
         } else {
-            req.flash('failure_msg', "User not found or no changes made.")
-            res.redirect("/dashboard");
+            res.status(404).json({ success: false, message: "User not found or no changes made." });
         }
     } catch (err) {
-        console.error('Database query error:', err);
-        res.status(500).json({ error: `Failed to update user: ${err.message}` });
+        res.status(500).json({ success: false, message: `Failed to update user: ${err.message}` });
     }
 });
-app.post("/registerUser", async (req, res) => {
+
+app.post("/api/registerUser", async (req, res) => {
     let username = req.body.username;
     let password = req.body.password;
     let role = req.body.role;
 
     const result = await userAuth.registerUser(username, password, role, db);
-    console.log(result);
     if(result === "Already exists"){
-        req.flash('failure_msg', "This username already exists")
-        res.redirect("/dashboard");
+        res.status(409).json({ success: false, message: "This username already exists" });
     }else if(result === "error"){
-        req.flash('failure_msg', "There was an unexpected error, please try again")
-        res.redirect("/dashboard");
+        res.status(500).json({ success: false, message: "There was an unexpected error, please try again" });
     }else{
-        req.flash('success_msg', `New user: ${username}, added successfully`)
-        res.redirect("/dashboard");
+        res.status(201).json({ success: true, message: `New user: ${username}, added successfully` });
     }
-})
+});
 
 // Expenses
-app.post("/addExpenses", async (req, res) => {
+app.post("/api/addExpenses", async (req, res) => {
     let amount = req.body.amount;
     let description = req.body.description;
-    let userId = req.body.userId; //to be changed to req.user.id later
+    let userId = req.user ? req.user.id : 1; 
 
     try{
         const result = await db.query("INSERT INTO expenses (amount, description, user_id) VALUES ($1, $2, $3)",
         [amount, description, userId]);
         
         if(result.rowCount > 0){
-            req.flash('success_msg', "New expense successfully added")
-            res.redirect("/dashboard");
+            res.status(201).json({ success: true, message: "New expense successfully added" });
         }else{
-            req.flash('failure_msg', "Expense not added, try again!")
-            res.redirect("/dashboard");
+            res.status(400).json({ success: false, message: "Expense not added, try again!" });
         }
     }catch(err){
-        console.error('Database query error:', err);
-        res.status(500).json({ error: `Failed to add expense: ${err.message}` });
+        res.status(500).json({ success: false, message: `Failed to add expense: ${err.message}` });
     }
-})
-app.post("/deleteExpense", async (req, res) => {
+});
+
+app.post("/api/deleteExpense", async (req, res) => {
     let id = req.body.id;
-
     try{
-        const result = await db.query("DELETE FROM expenses WHERE id = $1",
-        [id]);
-
+        const result = await db.query("DELETE FROM expenses WHERE id = $1", [id]);
         if(result.rowCount > 0){
-            req.flash('success_msg', "Row successfully deleted")
-            res.redirect("/dashboard");
+            res.json({ success: true, message: "Row successfully deleted" });
         }else{
-            req.flash('failure_msg', "Row not deleted, try again!")
-            res.redirect("/dashboard");
+            res.status(404).json({ success: false, message: "Row not deleted, try again!" });
         }
     }catch(err){
-        console.error('Database query error:', err);
-        res.status(500).json({ error: `Failed to add expense: ${err.message}` });
+        res.status(500).json({ success: false, message: `Failed to delete expense: ${err.message}` });
     }
-})
+});
 
 // Customer route
-app.post("/editCustomer", async (req, res) => {
+app.post("/api/editCustomer", async (req, res) => {
     let id = req.body.customerId;
     let name = req.body.name;
     let phone = req.body.phone;
@@ -726,20 +676,18 @@ app.post("/editCustomer", async (req, res) => {
     try{
         const result = await db.query('UPDATE customers SET name = $1, phone_number = $2, address = $3, email = $4 WHERE id = $5',
             [name, phone, address, email, id]
-        )
-
+        );
         if(result.rowCount > 0){
-            req.flash('success_msg', "Customer's data successfully edited")
-            res.redirect("/dashboard");
+            res.json({ success: true, message: "Customer's data successfully edited" });
         }else{
-            req.flash('failure_msg', "Data not edited, please try again...")
-            res.redirect("/dashboard");
+            res.status(404).json({ success: false, message: "Data not edited, please try again..." });
         }
     }catch(err){
-        console.error(err);
+        res.status(500).json({ success: false, message: err.message });
     }
-})
-app.post("/addNewCustomer", async (req, res) => {
+});
+
+app.post("/api/addNewCustomer", async (req, res) => {
     let name = req.body.name;
     let phone = req.body.phone;
     let address = req.body.address;
@@ -748,100 +696,56 @@ app.post("/addNewCustomer", async (req, res) => {
     try{
         const result = await db.query('INSERT INTO customers(name, phone_number, address, email) VALUES ($1, $2, $3, $4)',
             [name, phone, address, email]
-        )
-
+        );
         if(result.rowCount > 0){
-            req.flash('success_msg', "New customer successfully added")
-            res.redirect("/dashboard");
+            res.status(201).json({ success: true, message: "New customer successfully added" });
         }else{
-            req.flash('failure_msg', "Customer not added, please try again...")
-            res.redirect("/dashboard");
+            res.status(400).json({ success: false, message: "Customer not added, please try again..." });
         }
     }catch(err){
-        console.error(err);
+        res.status(500).json({ success: false, message: err.message });
     }
-})
+});
 
+// Label routes
+app.post("/api/editUnit", (req, res) => editLabel(req.body.unit, req.body.unitId, 'units', req, res));
+app.post("/api/addNewUnit", (req, res) => addLabel(req.body.unit, 'units', req, res));
 
-// Unit route
-app.post("/editUnit", async (req, res) => {
-    let name = req.body.unit;
-    let id = req.body.unitId;
+app.post("/api/editCategory", (req, res) => editLabel(req.body.category, req.body.categoryId, 'categories', req, res));
+app.post("/api/addNewCategory", (req, res) => addLabel(req.body.category, 'categories', req, res));
 
-    editLabel(name, id, 'units', req, res);
-})
-app.post("/addNewUnit", async (req, res) => {
-    let name = req.body.unit;
+app.post("/api/editSupplier", (req, res) => editLabel(req.body.supplier, req.body.supplierId, 'suppliers', req, res));
+app.post("/api/addNewSupplier", (req, res) => addLabel(req.body.supplier, 'suppliers', req, res));
 
-    addLabel(name, 'units', req, res);
-})
+app.post("/api/editCompany", (req, res) => editLabel(req.body.company, req.body.companyId, 'companies', req, res));
+app.post("/api/addNewCompany", (req, res) => addLabel(req.body.company, 'companies', req, res));
 
-// Categories route
-app.post("/editCategory", async (req, res) => {
-    let name = req.body.category;
-    let id = req.body.categoryId;
+// Auth routes
+app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+        if (err) return next(err);
+        if (!user) return res.status(401).json({ success: false, message: info.message });
+        req.logIn(user, (err) => {
+            if (err) return next(err);
+            return res.json({ success: true, message: "Logged in successfully", user });
+        });
+    })(req, res, next);
+});
 
-    editLabel(name, id, 'categories', req, res);
-})
-app.post("/addNewCategory", async (req, res) => {
-    let name = req.body.category;
-
-    addLabel(name, 'categories', req, res);
-})
-
-// Suppliers route
-app.post("/editSupplier", async (req, res) => {
-    let name = req.body.supplier;
-    let id = req.body.supplierId;
-
-    editLabel(name, id, 'suppliers', req, res);
-})
-app.post("/addNewSupplier", async (req, res) => {
-    let name = req.body.supplier;
-
-    addLabel(name, 'suppliers', req, res);
-})
-
-// Companies route
-app.post("/editCompany", async (req, res) => {
-    let name = req.body.company;
-    let id = req.body.companyId;
-
-    editLabel(name, id, 'companies', req, res);
-})
-app.post("/addNewCompany", async (req, res) => {
-    let name = req.body.company;
-
-    addLabel(name, 'companies', req, res);
-})
-
-app.post("/salesLogin", passport.authenticate("local", {
-    successRedirect: "/salesPage",
-    failureRedirect: "/salesLogin",
-    failureFlash: true   // Crucial: Pass the message from LocalStrategy to connect-flash
-}));
-app.post("/adminLogin", passport.authenticate("local", {
-    successRedirect: "/dashboard",
-    failureRedirect: "/adminlogin",
-    failureFlash: true   // Crucial: Pass the message from LocalStrategy to connect-flash
-}));
-
-// logout
-app.get("/logout", (req, res) => {
+app.post("/api/logout", (req, res) => {
     req.logout((err) => {
         if(err){
-            console.log(err);
+            return res.status(500).json({ success: false, message: err.message });
         }else{
-            res.redirect("/salesLogin")
+            res.json({ success: true, message: "Logged out successfully" });
         }
     })
-})
+});
 
 // Passport Authentication
-passport.use("local", new Strategy (async function verify(username, password, cb){
+passport.use("local", new Strategy(async function verify(username, password, cb){
     try{
         let user = await userAuth.loginUser(username, password, db);
-
         if(user == "wrong password"){
             return cb(null, false, { message: 'Wrong Password!!'});
         }else if(user == "does not exist"){
@@ -852,16 +756,16 @@ passport.use("local", new Strategy (async function verify(username, password, cb
     }catch(err){
         return cb(err);
     }
-}))
+}));
 
 passport.serializeUser((user, cb) => {
     cb(null, user);
-})
+});
 passport.deserializeUser((user, cb) => {
     cb(null, user)
-})
+});
 
 //Listening at port >> 3000
 app.listen(port, () => {
     console.log(`Server running at ${port}`)
-})
+});

@@ -6,17 +6,17 @@ export default async function checkTransaction(startDate, endDate, transactionTy
     const queryParts = [];
     const params = [];
     let paramCounter = 1;
-    
+
     // --- 1. Dynamic WHERE Clause Construction ---
 
     // CORRECTED: Using 'sc.change_date' from the table schema
-    if (startDate) { 
+    if (startDate) {
         queryParts.push(`sc.change_date >= $${paramCounter}`);
         params.push(startDate);
         paramCounter++;
     }
 
-    if (endDate) { 
+    if (endDate) {
         queryParts.push(`sc.change_date < ($${paramCounter}::date + interval '1 day')`);
         params.push(endDate);
         paramCounter++;
@@ -71,26 +71,24 @@ export default async function checkTransaction(startDate, endDate, transactionTy
         LEFT JOIN
             sales s ON sc.sale_id = s.id AND sc.change_type = 'Sales'
     `;
-    
+
     // --- 3. Append Dynamic WHERE Clause ---
     if (queryParts.length > 0) {
         sqlQuery += ` WHERE ${queryParts.join(' AND ')}`;
     }
-    
+
     // --- 4. Append ORDER BY Clause and Execution ---
     sqlQuery += ` ORDER BY sc.change_date DESC, sc.id DESC;`; // CORRECTED: Ordering by change_date
 
-    console.log(sqlQuery, params)
-
     try {
         const result = await db.query(sqlQuery, params);
-        
+
         if (result.rows.length === 0) {
             return 'No transactions found for the specified criteria.';
         }
 
         return result.rows;
-        
+
     } catch (error) {
         console.error('Database Error during transaction search:', error.message || error);
         return 'Failed to retrieve transactions due to a server error.';

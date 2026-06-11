@@ -1,0 +1,37 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+
+import SalesPage from './pages/SalesPage';
+import StockPage from './pages/StockPage';
+import TransactionsPage from './pages/TransactionsPage';
+import PurchasesPage from './pages/PurchasesPage';
+import ProductTrackerPage from './pages/ProductTrackerPage';
+import InternalUpdatesPage from './pages/InternalUpdatesPage';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        {/* Protected Routes inside Layout */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/sales" element={<SalesPage />} />
+          <Route path="/stock" element={<StockPage />} />
+          <Route path="/purchases" element={<PurchasesPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/tracker" element={<ProductTrackerPage />} />
+          <Route path="/internal-updates" element={<InternalUpdatesPage />} />
+        </Route>
+      </Routes>
+    </Router>
+  )
+}
+
+export default App;
