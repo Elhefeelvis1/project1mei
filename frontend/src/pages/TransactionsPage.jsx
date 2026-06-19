@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Calendar, FileText, Filter } from 'lucide-react';
+import CSVDownload from '../components/CSVDownload';
+
 
 const TransactionsPage = () => {
   const [searchParamsUrl] = useSearchParams();
@@ -12,7 +14,7 @@ const TransactionsPage = () => {
     startDate: '',
     endDate: '',
     transactionType: isTodayOnly ? 'Sales' : '',
-    userId: '',
+    userId: 0,
   });
 
   const [results, setResults] = useState([]);
@@ -87,9 +89,12 @@ const TransactionsPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Transaction History</h1>
-        <p className="text-gray-500 mt-1">Review sales, purchases, returns, and adjustments.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Transaction History</h1>
+          <p className="text-gray-500 mt-1">Review sales, purchases, returns, and adjustments.</p>
+        </div>
+        <CSVDownload fetchData={results} fileName={'transactions.csv'} />
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -146,7 +151,7 @@ const TransactionsPage = () => {
               value={searchParams.userId}
               onChange={e => setSearchParams({ ...searchParams, userId: e.target.value })}
             >
-              <option value="all">All Users</option>
+              <option value="0">All Users</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.username}</option>)}
             </select>
           </div>
@@ -205,8 +210,8 @@ const TransactionsPage = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right font-medium text-gray-700">{row.quantity_change}</td>
-                  <td className="px-6 py-4 text-right text-gray-600">${row.selling_price_per_unit || row.unit_selling_price || 0}</td>
-                  <td className="px-6 py-4 text-right font-medium text-indigo-600">${row.gross_revenue_impact || 0}</td>
+                  <td className="px-6 py-4 text-right text-gray-600">₦{row.selling_price_per_unit || row.unit_selling_price || 0}</td>
+                  <td className="px-6 py-4 text-right font-medium text-indigo-600">₦{row.gross_revenue_impact || 0}</td>
                   <td className="px-6 py-4 text-gray-600 flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">
                       {(row.transacted_by || row.username || 'U').substring(0, 2).toUpperCase()}
@@ -229,11 +234,11 @@ const TransactionsPage = () => {
           <div className="bg-gray-50 p-6 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <p className="text-sm text-gray-500 font-medium">Total Sales Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">${totals.salesRevenue}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{totals.salesRevenue}</p>
             </div>
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <p className="text-sm text-gray-500 font-medium">Total Discount Given</p>
-              <p className="text-2xl font-bold text-gray-900">${totals.discount}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{totals.discount}</p>
             </div>
           </div>
         )}

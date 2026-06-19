@@ -200,7 +200,7 @@ const SalesPage = () => {
                           <td className="px-4 py-3 font-semibold text-gray-800">{item.item_name}</td>
                           <td className="px-4 py-3 text-gray-500">{item.category_name}</td>
                           <td className="px-4 py-3 text-gray-500">{item.total_quantity_in_stock} {item.unit_name} left</td>
-                          <td className="px-4 py-3 font-bold text-indigo-600">${item.unit_selling_price}</td>
+                          <td className="px-4 py-3 font-bold text-indigo-600">₦{item.unit_selling_price}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -248,7 +248,7 @@ const SalesPage = () => {
                     {cart.map((item) => (
                       <tr key={item.item_id} className="bg-white hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-semibold text-gray-800">{item.item_name}</td>
-                        <td className="px-4 py-3 text-gray-600">${item.selling_price}</td>
+                        <td className="px-4 py-3 text-gray-600">₦{item.selling_price}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-center">
                             <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50 w-max">
@@ -264,7 +264,7 @@ const SalesPage = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-800">${(item.selling_price * item.quantity).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">₦{(item.selling_price * item.quantity).toFixed(2)}</td>
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => removeFromCart(item.item_id)}
@@ -351,7 +351,7 @@ const SalesPage = () => {
               <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span className="font-medium">${total.toFixed(2)}</span>
+                  <span className="font-medium">₦{total.toFixed(2)}</span>
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1">
@@ -366,7 +366,7 @@ const SalesPage = () => {
                   <div className="flex-1">
                     <input
                       type="number"
-                      placeholder="Disc $"
+                      placeholder="Disc ₦"
                       className="w-full px-2 py-1 text-sm border border-gray-200 rounded"
                       value={discountValue}
                       onChange={(e) => { setDiscountValue(e.target.value); setDiscountPercent(''); }}
@@ -375,11 +375,11 @@ const SalesPage = () => {
                 </div>
                 <div className="flex justify-between text-indigo-600">
                   <span>Discount</span>
-                  <span className="font-medium">-${discountAmount.toFixed(2)}</span>
+                  <span className="font-medium">-₦{discountAmount.toFixed(2)}</span>
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center mt-2">
                   <span className="text-lg font-bold text-gray-800">Total</span>
-                  <span className="text-2xl font-black text-gray-900">${amountPayable.toFixed(2)}</span>
+                  <span className="text-2xl font-black text-gray-900">₦{amountPayable.toFixed(2)}</span>
                 </div>
               </div>
             </div>

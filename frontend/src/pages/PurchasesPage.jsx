@@ -195,13 +195,13 @@ const PurchasesPage = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center">
-                          <span className="text-gray-500 mr-1">$</span>
+                          <span className="text-gray-500 mr-1">₦</span>
                           <input type="number" step="0.01" className="w-full px-2 py-1 border rounded" value={item.unit_cost} onChange={(e) => updateCartItem(item.id, 'unit_cost', e.target.value)} />
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center">
-                          <span className="text-gray-500 mr-1">$</span>
+                          <span className="text-gray-500 mr-1">₦</span>
                           <input type="number" step="0.01" className="w-full px-2 py-1 border rounded" value={item.unit_price} onChange={(e) => updateCartItem(item.id, 'unit_price', e.target.value)} />
                         </div>
                       </td>
@@ -209,7 +209,7 @@ const PurchasesPage = () => {
                         <input type="date" className="w-full px-2 py-1 border rounded" value={item.expiry_date} onChange={(e) => updateCartItem(item.id, 'expiry_date', e.target.value)} />
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-indigo-600">
-                        ${(parseFloat(item.unit_cost || 0) * parseInt(item.quantity || 0)).toFixed(2)}
+                        ₦{(parseFloat(item.unit_cost || 0) * parseInt(item.quantity || 0)).toFixed(2)}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 p-1">
@@ -238,7 +238,7 @@ const PurchasesPage = () => {
             
             <div className="flex flex-col items-end px-6 border-x border-gray-100">
               <span className="text-sm text-gray-500 font-medium">Total Purchase</span>
-              <span className="text-2xl font-black text-gray-900">${total.toFixed(2)}</span>
+              <span className="text-2xl font-black text-gray-900">₦{total.toFixed(2)}</span>
             </div>
 
             <div className="flex gap-2">

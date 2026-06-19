@@ -18,7 +18,7 @@ import checkTransaction from './imports/checkTransaction.js';
 // importing addPurchase function
 import savePurchase from './imports/addPurchase.js';
 // importing internal stock updates
-import {saveReturn, removeStock} from './imports/internalStockUpdates.js';
+import { saveReturn, removeStock } from './imports/internalStockUpdates.js';
 // Importing adjustment logic
 import adjustment from './imports/adjustmentLogic.js';
 
@@ -28,7 +28,7 @@ const saltRounds = 5;
 env.config();
 
 app.use(express.json()); // To parse JSON bodies
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 // Express Session
@@ -46,18 +46,18 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Global functions
-function addLabel(name, tableName, req, res){
-    if(addEdit.addNew(name, tableName, db)){
+function addLabel(name, tableName, req, res) {
+    if (addEdit.addNew(name, tableName, db)) {
         res.status(201).json({ success: true, message: `New ${name} successfully added to ${tableName}` });
-    }else{
+    } else {
         res.status(400).json({ success: false, message: `${name} not added, try again!` });
     }
 }
 
-function editLabel(name, id, tableName, req, res){
-    if(addEdit.addNew(name, id, tableName, db)){
+function editLabel(name, id, tableName, req, res) {
+    if (addEdit.addNew(name, id, tableName, db)) {
         res.status(200).json({ success: true, message: `${name} successfully edited in ${tableName}` });
-    }else{
+    } else {
         res.status(400).json({ success: false, message: `${name} not edited, try again!` });
     }
 }
@@ -99,10 +99,10 @@ app.get("/api/dashboard", async (req, res) => {
 
         res.json({
             users: allUsers.rows,
-            recentSales: salesData.rows, 
+            recentSales: salesData.rows,
             recentPurchases: purchases.rows,
-        }); 
-    } catch(err) {
+        });
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -116,18 +116,18 @@ app.get("/api/stockPage", async (req, res) => {
             categories: categories.rows,
             units: units.rows,
         });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 app.get("/api/purchasePage", async (req, res) => {
-    try{
+    try {
         const result = await db.query('SELECT * FROM suppliers');
         res.json({
             suppliers: result.rows
         });
-    }catch(err){
+    } catch (err) {
         console.error('Database query error:', err);
         res.status(500).json({
             success: false,
@@ -144,7 +144,7 @@ app.get("/api/transactionPage", async (req, res) => {
         res.json({
             users: userData.rows,
         });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -156,34 +156,34 @@ app.get("/api/productTracker", async (req, res) => {
         res.json({
             categories: categories.rows
         });
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 // *********Sales processing
 app.get("/api/searchItems", async (req, res) => {
-    const{itemName, category, minPrice, maxPrice} = req.query;
-    try{
+    const { itemName, category, minPrice, maxPrice } = req.query;
+    try {
         const data = await sales.searchDb(itemName, category, minPrice, maxPrice, db);
-        if(data.length > 0){
+        if (data.length > 0) {
             res.json({
                 success: true,
                 message: `${data.length} item(s) found!`,
                 contents: data
             });
         } else {
-            res.status(404).json({  
+            res.status(404).json({
                 success: false,
                 message: "Item not found, check the name or criteria!",
                 contents: []
             });
         }
-    } catch(err){
-        res.status(500).json({ 
+    } catch (err) {
+        res.status(500).json({
             success: false,
             message: `Couldn't search for item: ${err.message}`,
-            error: err.message 
+            error: err.message
         });
     }
 });
@@ -191,24 +191,24 @@ app.get("/api/searchItems", async (req, res) => {
 // Search customers
 app.get("/api/searchCustomers", async (req, res) => {
     const customerName = req.query.customerName;
-    try{
+    try {
         const result = await db.query('SELECT * FROM customers WHERE name ILIKE $1', [`%${customerName}%`])
         const data = result.rows;
-        
-        if(data.length > 0){
+
+        if (data.length > 0) {
             res.json({
                 success: true,
                 message: `${data.length} customer(s) found!`,
                 contents: data
             });
         } else {
-            res.status(404).json({  
+            res.status(404).json({
                 success: false,
                 message: "",
                 contents: []
             });
         }
-    }catch(err){
+    } catch (err) {
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve customers: ${err.message}`,
@@ -219,7 +219,7 @@ app.get("/api/searchCustomers", async (req, res) => {
 
 // Item Tracker
 app.get("/api/track-product", async (req, res) => {
-    const { productId, startDate, stopDate } = req.query; 
+    const { productId, startDate, stopDate } = req.query;
     try {
         const queryText = `
             SELECT 
@@ -242,20 +242,20 @@ app.get("/api/track-product", async (req, res) => {
         const result = await db.query(queryText, values);
         const data = result.rows;
 
-        if(data.length > 0){
+        if (data.length > 0) {
             res.json({
                 success: true,
                 message: `${data.length} transaction(s) found!`,
                 contents: data
             });
         } else {
-            res.status(404).json({  
+            res.status(404).json({
                 success: false,
                 message: "No transactions found for this item.",
                 contents: []
             });
         }
-    }catch(error){
+    } catch (error) {
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve data: ${error.message}`,
@@ -266,7 +266,7 @@ app.get("/api/track-product", async (req, res) => {
 
 // Fetch all stocks
 app.get("/api/all-inventory", async (req, res) => {
-    try{
+    try {
         const result = await db.query(`
             SELECT 
                 ast.id,
@@ -289,7 +289,7 @@ app.get("/api/all-inventory", async (req, res) => {
 
         const inventory = result.rows;
 
-        if(inventory.length > 0){
+        if (inventory.length > 0) {
             res.json({
                 success: true,
                 message: `${inventory.length} items(s) found!`,
@@ -302,7 +302,7 @@ app.get("/api/all-inventory", async (req, res) => {
                 contents: []
             });
         }
-    }catch(error){
+    } catch (error) {
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve data: ${error.message}`,
@@ -332,7 +332,7 @@ app.get("/api/track-product", async (req, res) => {
 
 // Internal Updates
 app.post("/api/process-return", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -346,7 +346,7 @@ app.post("/api/process-return", async (req, res) => {
 });
 
 app.post("/api/process-expired", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -360,7 +360,7 @@ app.post("/api/process-expired", async (req, res) => {
 });
 
 app.post("/api/process-office-use", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -374,7 +374,7 @@ app.post("/api/process-office-use", async (req, res) => {
 });
 
 app.post("/api/process-damaged", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -389,7 +389,7 @@ app.post("/api/process-damaged", async (req, res) => {
 
 // Process Purchase
 app.post("/api/process-purchase", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -404,28 +404,28 @@ app.post("/api/process-purchase", async (req, res) => {
 
 // Save Sale
 app.post("/api/process-sale", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const saleData = req.body;
     try {
-        const newSale = await sales.saveSale(userId, saleData, db, res); 
-        if (newSale && newSale.saleId) { 
+        const newSale = await sales.saveSale(userId, saleData, db, res);
+        if (newSale && newSale.saleId) {
             res.status(201).json({
                 success: true,
                 message: `Sale successfully processed!`,
                 contents: newSale
             });
         } else {
-            res.status(400).json({ 
+            res.status(400).json({
                 success: false,
                 message: "Sale could not be saved. Invalid data or internal issue.",
                 contents: {}
             });
         }
     } catch (err) {
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: `Failed to process sale: ${err.message}`,
-            error: err.message 
+            error: err.message
         });
     }
 });
@@ -437,11 +437,11 @@ app.post("/api/searchTransactions", async (req, res) => {
         const data = await checkTransaction(startDate, endDate, transactionType, userId, db, res);
         const userData = await db.query('SELECT id, username FROM users');
 
-        if(Array.isArray(data) && data.length > 0){
+        if (Array.isArray(data) && data.length > 0) {
             const transactionsWithRevenue = data.map(transaction => {
                 if (transaction.change_type === 'Sales') {
                     const price = parseFloat(transaction.selling_price_per_unit);
-                    const quantity = Math.abs(transaction.quantity_change); 
+                    const quantity = Math.abs(transaction.quantity_change);
                     transaction.gross_revenue_impact = (price * quantity).toFixed(2);
                 } else {
                     transaction.gross_revenue_impact = null;
@@ -449,11 +449,11 @@ app.post("/api/searchTransactions", async (req, res) => {
                 return transaction;
             });
 
-            const totalSalesRevenue = transactionsWithRevenue.reduce((acc, curr) => {   
+            const totalSalesRevenue = transactionsWithRevenue.reduce((acc, curr) => {
                 return acc + (parseFloat(curr.gross_revenue_impact) || 0);
             }, 0);
 
-            const totalDiscount = transactionsWithRevenue.reduce((acc, curr) => {   
+            const totalDiscount = transactionsWithRevenue.reduce((acc, curr) => {
                 return acc + (parseFloat(curr.sale_discount) || 0);
             }, 0);
 
@@ -464,19 +464,19 @@ app.post("/api/searchTransactions", async (req, res) => {
                 totalDiscount: totalDiscount.toFixed(2),
                 users: userData.rows,
             });
-        } else if(!Array.isArray(data)){
+        } else if (!Array.isArray(data)) {
             res.status(400).json({ success: false, message: data });
         } else {
             res.status(404).json({ success: false, message: "No transactions found for this timeline" });
         }
-    } catch(err) {
+    } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
 // Stock adjustments
 app.post('/api/process-adjustments', async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const { items } = req.body;
 
     if (!items || items.length === 0) {
@@ -493,7 +493,7 @@ app.post('/api/process-adjustments', async (req, res) => {
             });
         }
     } catch (err) {
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
             message: `Failed to process adjustments: ${err.message}`
         });
@@ -504,7 +504,7 @@ app.post('/api/process-adjustments', async (req, res) => {
 
 // Process Returns
 app.post("/api/process-return", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -519,7 +519,7 @@ app.post("/api/process-return", async (req, res) => {
 
 // Process Damaged items
 app.post("/api/process-damaged", async (req, res) => {
-    const userId = req.user ? req.user.id : 1; 
+    const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
         await client.query('BEGIN');
@@ -622,11 +622,11 @@ app.post("/api/registerUser", async (req, res) => {
     let role = req.body.role;
 
     const result = await userAuth.registerUser(username, password, role, db);
-    if(result === "Already exists"){
+    if (result === "Already exists") {
         res.status(409).json({ success: false, message: "This username already exists" });
-    }else if(result === "error"){
+    } else if (result === "error") {
         res.status(500).json({ success: false, message: "There was an unexpected error, please try again" });
-    }else{
+    } else {
         res.status(201).json({ success: true, message: `New user: ${username}, added successfully` });
     }
 });
@@ -635,32 +635,32 @@ app.post("/api/registerUser", async (req, res) => {
 app.post("/api/addExpenses", async (req, res) => {
     let amount = req.body.amount;
     let description = req.body.description;
-    let userId = req.user ? req.user.id : 1; 
+    let userId = req.user ? req.user.id : 1;
 
-    try{
+    try {
         const result = await db.query("INSERT INTO expenses (amount, description, user_id) VALUES ($1, $2, $3)",
-        [amount, description, userId]);
-        
-        if(result.rowCount > 0){
+            [amount, description, userId]);
+
+        if (result.rowCount > 0) {
             res.status(201).json({ success: true, message: "New expense successfully added" });
-        }else{
+        } else {
             res.status(400).json({ success: false, message: "Expense not added, try again!" });
         }
-    }catch(err){
+    } catch (err) {
         res.status(500).json({ success: false, message: `Failed to add expense: ${err.message}` });
     }
 });
 
 app.post("/api/deleteExpense", async (req, res) => {
     let id = req.body.id;
-    try{
+    try {
         const result = await db.query("DELETE FROM expenses WHERE id = $1", [id]);
-        if(result.rowCount > 0){
+        if (result.rowCount > 0) {
             res.json({ success: true, message: "Row successfully deleted" });
-        }else{
+        } else {
             res.status(404).json({ success: false, message: "Row not deleted, try again!" });
         }
-    }catch(err){
+    } catch (err) {
         res.status(500).json({ success: false, message: `Failed to delete expense: ${err.message}` });
     }
 });
@@ -673,16 +673,16 @@ app.post("/api/editCustomer", async (req, res) => {
     let address = req.body.address;
     let email = req.body.email;
 
-    try{
+    try {
         const result = await db.query('UPDATE customers SET name = $1, phone_number = $2, address = $3, email = $4 WHERE id = $5',
             [name, phone, address, email, id]
         );
-        if(result.rowCount > 0){
+        if (result.rowCount > 0) {
             res.json({ success: true, message: "Customer's data successfully edited" });
-        }else{
+        } else {
             res.status(404).json({ success: false, message: "Data not edited, please try again..." });
         }
-    }catch(err){
+    } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
@@ -693,16 +693,16 @@ app.post("/api/addNewCustomer", async (req, res) => {
     let address = req.body.address;
     let email = req.body.email;
 
-    try{
+    try {
         const result = await db.query('INSERT INTO customers(name, phone_number, address, email) VALUES ($1, $2, $3, $4)',
             [name, phone, address, email]
         );
-        if(result.rowCount > 0){
+        if (result.rowCount > 0) {
             res.status(201).json({ success: true, message: "New customer successfully added" });
-        }else{
+        } else {
             res.status(400).json({ success: false, message: "Customer not added, please try again..." });
         }
-    }catch(err){
+    } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
 });
@@ -734,26 +734,26 @@ app.post("/api/login", (req, res, next) => {
 
 app.post("/api/logout", (req, res) => {
     req.logout((err) => {
-        if(err){
+        if (err) {
             return res.status(500).json({ success: false, message: err.message });
-        }else{
+        } else {
             res.json({ success: true, message: "Logged out successfully" });
         }
     })
 });
 
 // Passport Authentication
-passport.use("local", new Strategy(async function verify(username, password, cb){
-    try{
+passport.use("local", new Strategy(async function verify(username, password, cb) {
+    try {
         let user = await userAuth.loginUser(username, password, db);
-        if(user == "wrong password"){
-            return cb(null, false, { message: 'Wrong Password!!'});
-        }else if(user == "does not exist"){
+        if (user == "wrong password") {
+            return cb(null, false, { message: 'Wrong Password!!' });
+        } else if (user == "does not exist") {
             return cb(null, false, { message: 'This user is not registered, Contact your Admin.' });
-        }else{
+        } else {
             return cb(null, user);
         }
-    }catch(err){
+    } catch (err) {
         return cb(err);
     }
 }));

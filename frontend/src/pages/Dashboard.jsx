@@ -85,7 +85,7 @@ const Dashboard = () => {
                   <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{sale.name}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">{Math.abs(sale.quantity_change)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">${sale.unit_selling_price}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">₦{sale.unit_selling_price}</td>
                   </tr>
                 )) : (
                   <tr>

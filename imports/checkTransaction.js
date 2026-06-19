@@ -28,7 +28,7 @@ export default async function checkTransaction(startDate, endDate, transactionTy
         paramCounter++;
     }
 
-    if (user !== 'all' && user !== undefined) {
+    if (user !== 0 && user !== undefined) {
         queryParts.push(`sc.user_id = $${paramCounter}`);
         params.push(user);
         paramCounter++;

@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "prop-types": "^15.8.1",
     "react": "^19.2.6",
+    "react-csv": "^2.2.2",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
