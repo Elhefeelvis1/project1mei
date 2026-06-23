@@ -1,19 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useSearchParams } from 'react-router-dom';
 import { Search, Calendar, FileText, Filter } from 'lucide-react';
 import CSVDownload from '../components/CSVDownload';
 
 
 const TransactionsPage = () => {
-  const [searchParamsUrl] = useSearchParams();
-  const isTodayOnly = searchParamsUrl.get('today') === 'true';
-
   const [users, setUsers] = useState([]);
   const [searchParams, setSearchParams] = useState({
     startDate: '',
     endDate: '',
-    transactionType: isTodayOnly ? 'Sales' : '',
+    transactionType: '',
     userId: 0,
   });
 
@@ -61,26 +57,15 @@ const TransactionsPage = () => {
 
     const today = new Date();
     const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-
-    if (isTodayOnly) {
-      const todayParams = {
-        startDate: todayStr,
-        endDate: todayStr,
-        transactionType: 'Sales',
-        userId: ''
-      };
-      setSearchParams(todayParams);
-      fetchTransactions(todayParams);
-    } else {
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      const firstDayStr = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-      setSearchParams(prev => ({
-        ...prev,
-        startDate: firstDayStr,
-        endDate: todayStr
-      }));
-    }
-  }, [isTodayOnly]);
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const firstDayStr = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    
+    setSearchParams(prev => ({
+      ...prev,
+      startDate: firstDayStr,
+      endDate: todayStr
+    }));
+  }, []);
 
   const handleSearch = (e) => {
     if (e) e.preventDefault();

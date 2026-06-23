@@ -474,6 +474,100 @@ app.post("/api/searchTransactions", async (req, res) => {
     }
 });
 
+// Search Previous Sales
+app.post("/api/searchSales", async (req, res) => {
+    const { startDate, endDate, customerId, userId } = req.body;
+    if (!startDate || !endDate) {
+        return res.status(400).json({ success: false, message: 'Start date and end date are required.' });
+    }
+    try {
+        const queryParts = [];
+        const params = [];
+        let paramCounter = 1;
+
+        queryParts.push(`s.sale_date >= $${paramCounter}::date`);
+        params.push(startDate);
+        paramCounter++;
+
+        queryParts.push(`s.sale_date < ($${paramCounter}::date + interval '1 day')`);
+        params.push(endDate);
+        paramCounter++;
+
+        if (customerId && parseInt(customerId, 10) > 0) {
+            queryParts.push(`s.customer_id = $${paramCounter}`);
+            params.push(parseInt(customerId, 10));
+            paramCounter++;
+        }
+
+        if (userId && parseInt(userId, 10) > 0) {
+            queryParts.push(`s.user_id = $${paramCounter}`);
+            params.push(parseInt(userId, 10));
+            paramCounter++;
+        }
+
+        const salesQuery = `
+            SELECT 
+                s.id AS sale_id,
+                s.sale_date,
+                s.total_amount,
+                s.discount_applied,
+                s.pay_route,
+                s.customer_id,
+                c.name AS customer_name,
+                s.user_id,
+                u.username AS cashier_name,
+                s.bank_id,
+                b.bank_name
+            FROM sales s
+            LEFT JOIN customers c ON s.customer_id = c.id
+            LEFT JOIN users u ON s.user_id = u.id
+            LEFT JOIN banks b ON s.bank_id = b.id
+            WHERE ${queryParts.join(' AND ')}
+            ORDER BY s.sale_date DESC
+        `;
+        const salesResult = await db.query(salesQuery, params);
+        
+        if (salesResult.rows.length === 0) {
+            return res.json({ success: true, sales: [] });
+        }
+
+        const saleIds = salesResult.rows.map(r => r.sale_id);
+        const lineItemsQuery = `
+            SELECT 
+                sli.id AS line_item_id,
+                sli.sale_id,
+                sli.product_id,
+                ast.name AS product_name,
+                sli.quantity_sold,
+                sli.selling_price_per_unit,
+                sli.cost_at_sale
+            FROM sale_line_items sli
+            JOIN all_stocks ast ON sli.product_id = ast.id
+            WHERE sli.sale_id = ANY($1::int[])
+            ORDER BY sli.id ASC
+        `;
+        const lineItemsResult = await db.query(lineItemsQuery, [saleIds]);
+
+        const itemsBySaleId = {};
+        lineItemsResult.rows.forEach(item => {
+            if (!itemsBySaleId[item.sale_id]) {
+                itemsBySaleId[item.sale_id] = [];
+            }
+            itemsBySaleId[item.sale_id].push(item);
+        });
+
+        const sales = salesResult.rows.map(sale => ({
+            ...sale,
+            items: itemsBySaleId[sale.sale_id] || []
+        }));
+
+        res.json({ success: true, sales });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // Stock adjustments
 app.post('/api/process-adjustments', async (req, res) => {
     const userId = req.user ? req.user.id : 1;

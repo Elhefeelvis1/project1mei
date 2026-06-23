@@ -10,6 +10,7 @@ import TransactionsPage from './pages/TransactionsPage';
 import PurchasesPage from './pages/PurchasesPage';
 import ProductTrackerPage from './pages/ProductTrackerPage';
 import InternalUpdatesPage from './pages/InternalUpdatesPage';
+import PreviousSales from './pages/PreviousSales';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/tracker" element={<ProductTrackerPage />} />
           <Route path="/internal-updates" element={<InternalUpdatesPage />} />
+          <Route path="/previous-sales" element={<PreviousSales />} />
         </Route>
       </Routes>
     </Router>

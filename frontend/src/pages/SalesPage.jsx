@@ -135,10 +135,10 @@ const SalesPage = () => {
           <p className="text-gray-500 mt-1">Process new sales and manage cart.</p>
         </div>
         <button
-          onClick={() => navigate('/transactions?today=true')}
+          onClick={() => navigate('/previous-sales?today=true')}
           className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-100 font-semibold transition shadow-sm"
         >
-          View Today's Transactions
+          View Today's Sales
         </button>
       </div>
 

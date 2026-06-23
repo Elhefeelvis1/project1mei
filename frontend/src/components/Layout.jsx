@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingCart, Package, ArrowRightLeft, Users, FileText, LogOut, Wrench } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, ArrowRightLeft, Users, FileText, LogOut, Wrench, History } from 'lucide-react';
 import axios from 'axios';
 
 const Sidebar = () => {
@@ -9,6 +9,7 @@ const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Sales', path: '/sales', icon: <ShoppingCart size={20} /> },
+    { name: 'Previous Sales', path: '/previous-sales', icon: <History size={20} /> },
     { name: 'Stock', path: '/stock', icon: <Package size={20} /> },
     { name: 'Purchases', path: '/purchases', icon: <ArrowRightLeft size={20} /> },
     { name: 'Transactions', path: '/transactions', icon: <FileText size={20} /> },
