@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, ShoppingBag, CreditCard, User, Building, Package } from 'lucide-react';
+import AddCustomerModal from '../components/AddCustomerModal';
 
 const SalesPage = () => {
   const navigate = useNavigate();
@@ -25,6 +26,12 @@ const SalesPage = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerResults, setCustomerResults] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  // Customer notes state
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isNotesEditMode, setIsNotesEditMode] = useState(false);
+  const [customerNotes, setCustomerNotes] = useState('');
+  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -121,10 +128,34 @@ const SalesPage = () => {
       setDiscountValue('');
       setCustomerName('');
       setSelectedCustomer(null);
+      setCustomerNotes('');
     } catch (err) {
       console.error(err);
       alert('Failed to process sale.');
     }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!selectedCustomer) return;
+    try {
+      await axios.put('/api/updateCustomerNotes', {
+        id: selectedCustomer.id,
+        notes: customerNotes
+      });
+      // Update local selected customer object
+      setSelectedCustomer({ ...selectedCustomer, customer_notes: customerNotes });
+      setIsNotesEditMode(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update customer notes.');
+    }
+  };
+
+  const handleCustomerAdded = (newCustomer) => {
+    setSelectedCustomer(newCustomer);
+    setCustomerName(newCustomer.name);
+    setCustomerNotes(newCustomer.customer_notes || '');
+    setCustomerResults([]);
   };
 
   return (
@@ -154,14 +185,14 @@ const SalesPage = () => {
                 <input
                   type="text"
                   placeholder="Item Name..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-400"
                   value={searchQuery.itemName}
                   onChange={(e) => setSearchQuery({ ...searchQuery, itemName: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <select
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-white"
+                  className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-700"
                   value={searchQuery.category}
                   onChange={(e) => setSearchQuery({ ...searchQuery, category: e.target.value })}
                 >
@@ -289,7 +320,7 @@ const SalesPage = () => {
                     <CreditCard size={16} /> Payment Route
                   </label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-indigo-500 outline-none"
+                    className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-700"
                     value={paymentRoute}
                     onChange={(e) => {
                       setPaymentRoute(e.target.value)
@@ -309,7 +340,7 @@ const SalesPage = () => {
                       <Building size={16} /> Bank
                     </label>
                     <select
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-indigo-500 outline-none"
+                      className="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-700"
                       value={selectedBank}
                       onChange={(e) => setSelectedBank(e.target.value)}
                     >
@@ -326,11 +357,19 @@ const SalesPage = () => {
                     <input
                       type="text"
                       placeholder="Search name..."
-                      className="flex-1 px-3 py-2 border border-gray-200 rounded-lg outline-none"
+                      className="flex-1 px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-400"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
                     <button onClick={handleCustomerSearch} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition text-sm font-medium">Search</button>
+                    {customerName && customerName !== "Walk in customer" && (
+                      <button
+                        onClick={() => { setIsNotesModalOpen(true); setIsNotesEditMode(false); }}
+                        className="px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 rounded-lg transition text-sm font-medium whitespace-nowrap shadow-sm"
+                      >
+                        Notes
+                      </button>
+                    )}
                   </div>
                   {customerResults.length > 0 && !selectedCustomer && (
                     <div className="mt-2 border border-gray-200 rounded-lg max-h-32 overflow-y-auto shadow-sm">
@@ -338,13 +377,21 @@ const SalesPage = () => {
                         <div
                           key={c.id}
                           className="px-3 py-2 hover:bg-indigo-50 cursor-pointer text-sm transition"
-                          onClick={() => { setSelectedCustomer(c); setCustomerName(c.name); setCustomerResults([]); }}
+                          onClick={() => { setSelectedCustomer(c); setCustomerName(c.name); setCustomerNotes(c.customer_notes || ''); setCustomerResults([]); }}
                         >
                           {c.name} ({c.phone_number})
                         </div>
                       ))}
                     </div>
                   )}
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setIsAddCustomerModalOpen(true)}
+                      className="w-full px-3 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 border-dashed rounded-lg transition text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <Plus size={16} /> Add New Customer
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -358,7 +405,7 @@ const SalesPage = () => {
                     <input
                       type="number"
                       placeholder="Disc %"
-                      className="w-full px-2 py-1 text-sm border border-gray-200 rounded"
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-400"
                       value={discountPercent}
                       onChange={(e) => { setDiscountPercent(e.target.value); setDiscountValue(''); }}
                     />
@@ -367,7 +414,7 @@ const SalesPage = () => {
                     <input
                       type="number"
                       placeholder="Disc ₦"
-                      className="w-full px-2 py-1 text-sm border border-gray-200 rounded"
+                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder:text-gray-400"
                       value={discountValue}
                       onChange={(e) => { setDiscountValue(e.target.value); setDiscountPercent(''); }}
                     />
@@ -401,6 +448,71 @@ const SalesPage = () => {
           </div>
         </div>
       </div>
+
+      <AddCustomerModal
+        isOpen={isAddCustomerModalOpen}
+        onClose={() => setIsAddCustomerModalOpen(false)}
+        onSuccess={handleCustomerAdded}
+      />
+
+      {/* Customer Notes Modal */}
+      {isNotesModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <User size={20} className="text-indigo-500" />
+                Customer Notes: {selectedCustomer ? selectedCustomer.name : customerName}
+              </h3>
+              <button
+                onClick={() => setIsNotesModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="p-6 flex-1 overflow-y-auto">
+              {isNotesEditMode ? (
+                <textarea
+                  className="w-full h-48 p-4 bg-gray-50/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none transition-all placeholder:text-gray-400"
+                  placeholder="Enter customer notes, prescriptions, preferences, etc..."
+                  value={customerNotes}
+                  onChange={(e) => setCustomerNotes(e.target.value)}
+                />
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-xl min-h-[12rem] whitespace-pre-wrap text-gray-700 border border-gray-100">
+                  {customerNotes || <span className="text-gray-400 italic">No notes available for this customer.</span>}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex justify-end gap-3">
+              <button
+                onClick={() => setIsNotesModalOpen(false)}
+                className="px-4 py-2 border border-gray-200 text-gray-600 font-medium rounded-lg hover:bg-gray-100 transition"
+              >
+                Close
+              </button>
+              {isNotesEditMode ? (
+                <button
+                  onClick={handleSaveNotes}
+                  className="px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition shadow-sm"
+                >
+                  Save Notes
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsNotesEditMode(true)}
+                  className="px-4 py-2 bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium rounded-lg hover:bg-indigo-100 transition shadow-sm"
+                >
+                  Edit Notes
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
