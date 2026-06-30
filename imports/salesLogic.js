@@ -82,7 +82,7 @@ export async function saveSale(userId, saleData, db, res){
 
         const saleResult = await db.query(
             `INSERT INTO sales (user_id, total_amount, discount_applied, customer_id, pay_route, bank_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`,
-            [userId, 0.00, 0.00, saleData.customerId, saleData.payRoute, saleData.bank] // Temporary 0.00 values
+            [userId, 0.00, 0.00, saleData.customerId ? parseInt(saleData.customerId) : null, saleData.payRoute, saleData.bank ? parseInt(saleData.bank) : null] // Temporary 0.00 values
         );
         const saleId = saleResult.rows[0].id;
 

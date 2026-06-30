@@ -1,11 +1,33 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { TrendingUp, Users, DollarSign, Package } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Package, Settings, Save } from 'lucide-react';
 
 const Dashboard = () => {
   const [data, setData] = useState({ users: [], recentSales: [], recentPurchases: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [shopDetails, setShopDetails] = useState({ shopName: '', shopAddress: '', shopPhone: '', shopEmail: '', shopLogo: '' });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'shopInfo') {
+      axios.get('/api/shopDetails').then(res => setShopDetails(res.data)).catch(console.error);
+    }
+  }, [activeTab]);
+
+  const handleSaveShopDetails = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await axios.post('/api/shopDetails', shopDetails);
+      alert('Shop details updated successfully!');
+    } catch (err) {
+      alert('Failed to update shop details.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -46,10 +68,19 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-1">Welcome back. Here's what's happening today.</p>
+      <div className="flex justify-between items-center border-b border-gray-200 pb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Welcome back. Manage your shop and view metrics.</p>
+        </div>
+        <div className="flex gap-2">
+            <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'overview' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Overview</button>
+            <button onClick={() => setActiveTab('shopInfo')} className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'shopInfo' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Shop Info</button>
+        </div>
       </div>
+
+      {activeTab === 'overview' && (
+        <>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, idx) => (
@@ -134,6 +165,44 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      </>)}
+
+      {activeTab === 'shopInfo' && (
+        <div className="max-w-2xl bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <Settings size={20} className="text-indigo-500" /> Shop Settings
+          </h2>
+          <form onSubmit={handleSaveShopDetails} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name</label>
+              <input type="text" className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" value={shopDetails.shopName || ''} onChange={e => setShopDetails({...shopDetails, shopName: e.target.value})} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Address</label>
+              <textarea className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" value={shopDetails.shopAddress || ''} onChange={e => setShopDetails({...shopDetails, shopAddress: e.target.value})} required rows="2"></textarea>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input type="text" className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" value={shopDetails.shopPhone || ''} onChange={e => setShopDetails({...shopDetails, shopPhone: e.target.value})} required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input type="email" className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" value={shopDetails.shopEmail || ''} onChange={e => setShopDetails({...shopDetails, shopEmail: e.target.value})} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Shop Logo URL</label>
+              <input type="url" className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" value={shopDetails.shopLogo || ''} onChange={e => setShopDetails({...shopDetails, shopLogo: e.target.value})} />
+            </div>
+            <div className="pt-4 border-t border-gray-100">
+              <button type="submit" disabled={saving} className="bg-indigo-600 text-white font-medium py-2 px-6 rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+                <Save size={18} /> {saving ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

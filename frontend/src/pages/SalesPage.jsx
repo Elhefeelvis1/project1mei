@@ -3,12 +3,17 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Trash2, ShoppingBag, CreditCard, User, Building, Package } from 'lucide-react';
 import AddCustomerModal from '../components/AddCustomerModal';
+import { useOutletContext } from 'react-router-dom';
+import Receipt from '../components/Receipt';
 
 const SalesPage = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [banks, setBanks] = useState([]);
   const [required, setRequired] = useState(false);
+  const [shopDetails, setShopDetails] = useState(null);
+  const [receiptData, setReceiptData] = useState(null);
+  const { user } = useOutletContext() || {};
 
   // Search state
   const [searchQuery, setSearchQuery] = useState({ itemName: '', category: '', minPrice: '', maxPrice: '' });
@@ -39,6 +44,7 @@ const SalesPage = () => {
         const res = await axios.get('/api/salesPage');
         setCategories(res.data.categories || []);
         setBanks(res.data.banks || []);
+        setShopDetails(res.data.shopDetails || null);
       } catch (err) {
         console.error('Failed to load initial data', err);
       }
@@ -114,7 +120,7 @@ const SalesPage = () => {
         sellPrice: item.selling_price
       })),
       payRoute: paymentRoute,
-      bank: selectedBank,
+      bank: selectedBank || null,
       customerId: selectedCustomer?.id || null,
       totalDiscount: discountAmount,
       totalAmount: amountPayable
@@ -122,6 +128,19 @@ const SalesPage = () => {
 
     try {
       await axios.post('/api/process-sale', payload);
+
+      const currentReceiptData = {
+        shopDetails,
+        date: new Date().toLocaleString(),
+        items: cart.map(item => ({ ...item, itemName: item.item_name })),
+        totalAmount: total,
+        totalDiscount: discountAmount,
+        amountPaid: amountPayable,
+        payRoute: paymentRoute,
+        salesRep: user?.username
+      };
+      setReceiptData(currentReceiptData);
+
       alert('Sale processed successfully!');
       setCart([]);
       setDiscountPercent('');
@@ -129,6 +148,11 @@ const SalesPage = () => {
       setCustomerName('');
       setSelectedCustomer(null);
       setCustomerNotes('');
+
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setReceiptData(null), 1000);
+      }, 500);
     } catch (err) {
       console.error(err);
       alert('Failed to process sale.');
@@ -513,6 +537,7 @@ const SalesPage = () => {
           </div>
         </div>
       )}
+      <Receipt receiptData={receiptData} />
     </div>
   );
 };

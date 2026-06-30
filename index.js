@@ -4,7 +4,12 @@ import passport from 'passport';
 import { Strategy } from "passport-local";
 import env from "dotenv";
 import bcrypt from 'bcrypt';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 // Importing database login from another file(ignored on git)
 import db from "./imports/dbConn.js";
 // Importing login and register from imports folder
@@ -67,6 +72,44 @@ db.connect();
 
 // API ROUTES
 
+app.get("/api/shopDetails", async (req, res) => {
+    try {
+        const filePath = path.join(__dirname, 'imports', 'shopDetails.js');
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        // Extract the object part using regex
+        const match = fileContent.match(/const\s+shopDetails\s*=\s*({[\s\S]*?})/);
+        if (match && match[1]) {
+            // Using a safe eval (new Function) to parse the string object
+            const shopDetails = new Function(`return ${match[1]}`)();
+            res.json(shopDetails);
+        } else {
+            res.status(500).json({ error: "Could not parse shopDetails.js" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post("/api/shopDetails", async (req, res) => {
+    try {
+        const newDetails = req.body;
+        const filePath = path.join(__dirname, 'imports', 'shopDetails.js');
+        const content = `const shopDetails = {
+    shopName: ${JSON.stringify(newDetails.shopName || '')},
+    shopAddress: ${JSON.stringify(newDetails.shopAddress || '')},
+    shopPhone: ${JSON.stringify(newDetails.shopPhone || '')},
+    shopEmail: ${JSON.stringify(newDetails.shopEmail || '')},
+    shopLogo: ${JSON.stringify(newDetails.shopLogo || '')},
+}
+
+export default shopDetails;`;
+        fs.writeFileSync(filePath, content, 'utf-8');
+        res.json({ success: true, message: "Shop details updated successfully" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 app.get("/api/me", (req, res) => {
     if (req.isAuthenticated()) {
         res.json({ authenticated: true, user: req.user });
@@ -81,10 +124,23 @@ app.get("/api/salesPage", async (req, res) => {
         const banks = await db.query('SELECT * FROM banks');
         const customers = await db.query('SELECT id, name FROM customers');
 
+        let shopDetails = {};
+        try {
+            const filePath = path.join(__dirname, 'imports', 'shopDetails.js');
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            const match = fileContent.match(/const\s+shopDetails\s*=\s*({[\s\S]*?})/);
+            if (match && match[1]) {
+                shopDetails = new Function(`return ${match[1]}`)();
+            }
+        } catch (e) {
+            console.error('Failed to load shop details', e);
+        }
+
         res.json({
             categories: categories.rows,
             banks: banks.rows,
-            customers: customers.rows
+            customers: customers.rows,
+            shopDetails: shopDetails
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -212,6 +268,89 @@ app.get("/api/searchCustomers", async (req, res) => {
         res.status(500).json({
             success: false,
             message: `Couldn't retrieve customers: ${err.message}`,
+            error: err.message
+        });
+    }
+});
+
+// Update customer notes
+app.put("/api/updateCustomerNotes", async (req, res) => {
+    const { id, notes } = req.body;
+    try {
+        await db.query('UPDATE customers SET customer_notes = $1 WHERE id = $2', [notes, id]);
+        res.json({
+            success: true,
+            message: "Customer notes updated successfully!"
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: `Couldn't update customer notes: ${err.message}`,
+            error: err.message
+        });
+    }
+});
+
+// Add new customer
+app.post("/api/addCustomer", async (req, res) => {
+    const { name, phone_number, address, email, customer_notes } = req.body;
+    try {
+        const result = await db.query(
+            'INSERT INTO customers (name, phone_number, address, email, customer_notes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [name, phone_number || null, address || null, email || null, customer_notes || null]
+        );
+        res.json({
+            success: true,
+            message: "Customer added successfully!",
+            customer: result.rows[0]
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: `Couldn't add customer: ${err.message}`,
+            error: err.message
+        });
+    }
+});
+
+// Get all customers
+app.get("/api/allCustomers", async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM customers ORDER BY name ASC');
+        res.json({
+            success: true,
+            contents: result.rows
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: `Couldn't retrieve customers: ${err.message}`,
+            error: err.message
+        });
+    }
+});
+
+// Update customer (full)
+app.put("/api/updateCustomer", async (req, res) => {
+    const { id, name, phone_number, address, email, customer_notes } = req.body;
+    try {
+        const result = await db.query(
+            'UPDATE customers SET name = $1, phone_number = $2, address = $3, email = $4, customer_notes = $5 WHERE id = $6 RETURNING *',
+            [name, phone_number || null, address || null, email || null, customer_notes || null, id]
+        );
+        if (result.rows.length > 0) {
+            res.json({
+                success: true,
+                message: "Customer updated successfully!",
+                customer: result.rows[0]
+            });
+        } else {
+            res.status(404).json({ success: false, message: "Customer not found." });
+        }
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: `Couldn't update customer: ${err.message}`,
             error: err.message
         });
     }
@@ -457,11 +596,27 @@ app.post("/api/searchTransactions", async (req, res) => {
                 return acc + (parseFloat(curr.sale_discount) || 0);
             }, 0);
 
+            const payRouteTotals = {};
+            transactionsWithRevenue.forEach(transaction => {
+                if (transaction.change_type === 'Sales' && transaction.pay_route) {
+                    const impact = parseFloat(transaction.gross_revenue_impact) || 0;
+                    if (!payRouteTotals[transaction.pay_route]) {
+                        payRouteTotals[transaction.pay_route] = 0;
+                    }
+                    payRouteTotals[transaction.pay_route] += impact;
+                }
+            });
+            
+            for (const route in payRouteTotals) {
+                payRouteTotals[route] = payRouteTotals[route].toFixed(2);
+            }
+
             res.json({
                 success: true,
                 contents: transactionsWithRevenue,
                 totalSalesRevenue: totalSalesRevenue.toFixed(2),
                 totalDiscount: totalDiscount.toFixed(2),
+                payRouteTotals: payRouteTotals,
                 users: userData.rows,
             });
         } else if (!Array.isArray(data)) {

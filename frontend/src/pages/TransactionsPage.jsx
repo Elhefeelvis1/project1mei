@@ -30,7 +30,8 @@ const TransactionsPage = () => {
         setResults(res.data.contents || []);
         setTotals({
           salesRevenue: res.data.totalSalesRevenue || '0.00',
-          discount: res.data.totalDiscount || '0.00'
+          discount: res.data.totalDiscount || '0.00',
+          payRouteTotals: res.data.payRouteTotals || {}
         });
       } else {
         setResults([]);
@@ -217,9 +218,23 @@ const TransactionsPage = () => {
 
         {results.length > 0 && searchParams.transactionType === 'Sales' && (
           <div className="bg-gray-50 p-6 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1 relative group cursor-help">
               <p className="text-sm text-gray-500 font-medium">Total Sales Revenue</p>
               <p className="text-2xl font-bold text-gray-900">₦{totals.salesRevenue}</p>
+              
+              {totals.payRouteTotals && Object.keys(totals.payRouteTotals).length > 0 && (
+                <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 shadow-xl rounded-lg p-3 hidden group-hover:block z-10 transition-all opacity-0 group-hover:opacity-100">
+                  <p className="text-xs font-bold text-gray-700 border-b border-gray-100 pb-2 mb-2 uppercase tracking-wider">Pay Routes</p>
+                  <div className="space-y-2">
+                    {Object.entries(totals.payRouteTotals).map(([route, amount]) => (
+                      <div key={route} className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600 capitalize">{route}</span>
+                        <span className="font-semibold text-gray-900">₦{amount}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <p className="text-sm text-gray-500 font-medium">Total Discount Given</p>

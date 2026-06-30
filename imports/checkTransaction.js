@@ -67,7 +67,11 @@ export default async function checkTransaction(startDate, endDate, transactionTy
             CASE
                 WHEN sc.change_type = 'Sales' THEN s.discount_applied
                 ELSE NULL
-            END AS sale_discount
+            END AS sale_discount,
+            CASE
+                WHEN sc.change_type = 'Sales' THEN s.pay_route
+                ELSE NULL
+            END AS pay_route
         FROM
             stock_changes sc
         JOIN
