@@ -118,6 +118,29 @@ app.get("/api/me", (req, res) => {
     }
 });
 
+app.post('/api/change-password', async (req, res) => {
+    if (!req.isAuthenticated() || !req.user) {
+        return res.status(401).json({ message: 'Not authenticated' });
+    }
+
+    const { oldPassword, newPassword } = req.body;
+    
+    if (!oldPassword || !newPassword) {
+        return res.status(400).json({ message: 'Both old and new passwords are required' });
+    }
+
+    try {
+        const result = await userAuth.changeUserPassword(req.user.id, oldPassword, newPassword, db);
+        if (result.success) {
+            res.status(200).json({ message: 'Password updated successfully' });
+        } else {
+            res.status(400).json({ message: result.message });
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
 app.get("/api/salesPage", async (req, res) => {
     try {
         const categories = await db.query('SELECT name FROM categories');
@@ -968,6 +991,130 @@ app.post("/api/addNewSupplier", (req, res) => addLabel(req.body.supplier, 'suppl
 
 app.post("/api/editCompany", (req, res) => editLabel(req.body.company, req.body.companyId, 'companies', req, res));
 app.post("/api/addNewCompany", (req, res) => addLabel(req.body.company, 'companies', req, res));
+
+// User Settings endpoints (Admin Only)
+const isAdmin = (req, res, next) => {
+    if (req.isAuthenticated() && req.user && req.user.role === 'administrator') {
+        return next();
+    }
+    res.status(403).json({ success: false, message: 'Forbidden: Admins only' });
+};
+
+app.get('/api/users', isAdmin, async (req, res) => {
+    try {
+        const result = await db.query('SELECT id, username, role FROM users ORDER BY id ASC');
+        res.json({ success: true, users: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/users', isAdmin, async (req, res) => {
+    let { username, password, role } = req.body;
+    try {
+        const result = await userAuth.registerUser(username, password, role, db);
+        if (result === "Already exists") {
+            res.status(409).json({ success: false, message: "This username already exists" });
+        } else if (result === "error") {
+            res.status(500).json({ success: false, message: "Error registering user" });
+        } else {
+            res.status(201).json({ success: true, message: `User ${username} added successfully` });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.put('/api/users/:id', isAdmin, async (req, res) => {
+    const targetUserId = parseInt(req.params.id, 10);
+    const { username, role } = req.body;
+    try {
+        const result = await db.query('UPDATE users SET username = $1, role = $2 WHERE id = $3 RETURNING *', [username, role, targetUserId]);
+        if (result.rowCount > 0) {
+            // Log the user out by destroying their sessions
+            const sessions = req.sessionStore.sessions;
+            if (sessions) {
+                for (const sessionId in sessions) {
+                    try {
+                        const sessionObj = JSON.parse(sessions[sessionId]);
+                        if (sessionObj.passport && sessionObj.passport.user && sessionObj.passport.user.id === targetUserId) {
+                            if (targetUserId !== req.user.id) {
+                                req.sessionStore.destroy(sessionId);
+                            } else {
+                                req.session.passport.user.username = username;
+                                req.session.passport.user.role = role;
+                                req.session.save();
+                            }
+                        }
+                    } catch (e) { }
+                }
+            }
+            res.json({ success: true, message: 'User updated successfully' });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (err) {
+        if (err.code === '23505') { 
+            res.status(409).json({ success: false, message: 'Username already exists' });
+        } else {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+});
+
+app.put('/api/users/:id/password', isAdmin, async (req, res) => {
+    const targetUserId = parseInt(req.params.id, 10);
+    const { adminPassword, newPassword } = req.body;
+    const adminId = req.user.id;
+
+    if (!adminPassword || !newPassword) {
+        return res.status(400).json({ success: false, message: 'Admin password and new password are required' });
+    }
+
+    try {
+        const adminResult = await db.query("SELECT password FROM users WHERE id = $1", [adminId]);
+        if (adminResult.rows.length === 0) return res.status(404).json({ success: false, message: "Admin not found" });
+
+        const adminSavedPassword = adminResult.rows[0].password;
+        const passwordMatch = await bcrypt.compare(adminPassword, adminSavedPassword);
+
+        if (!passwordMatch) {
+            return res.status(403).json({ success: false, message: "Incorrect admin password" });
+        }
+
+        const hash = await bcrypt.hash(newPassword, saltRounds);
+        const updateResult = await db.query("UPDATE users SET password = $1 WHERE id = $2", [hash, targetUserId]);
+        
+        if (updateResult.rowCount > 0) {
+            res.json({ success: true, message: 'Password updated successfully' });
+        } else {
+            res.status(404).json({ success: false, message: 'Target user not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.delete('/api/users/:id', isAdmin, async (req, res) => {
+    const targetUserId = parseInt(req.params.id, 10);
+    if (targetUserId === req.user.id) {
+        return res.status(400).json({ success: false, message: "You cannot delete yourself" });
+    }
+    try {
+        const result = await db.query('DELETE FROM users WHERE id = $1', [targetUserId]);
+        if (result.rowCount > 0) {
+            res.json({ success: true, message: 'User deleted successfully' });
+        } else {
+            res.status(404).json({ success: false, message: 'User not found' });
+        }
+    } catch (err) {
+        if (err.code === '23503') {
+            res.status(400).json({ success: false, message: 'Cannot delete user because they are linked to existing records.' });
+        } else {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+});
 
 // Auth routes
 app.post("/api/login", (req, res, next) => {

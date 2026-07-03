@@ -72,7 +72,7 @@ const CustomersPage = () => {
           <input
             type="text"
             placeholder="Search customers..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 bg-white rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

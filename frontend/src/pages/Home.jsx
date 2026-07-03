@@ -1,5 +1,5 @@
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { ShoppingCart, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, LayoutDashboard, ArrowRightLeft } from 'lucide-react';
 
 const Home = () => {
   const { user } = useOutletContext();
@@ -22,27 +22,39 @@ const Home = () => {
         </h1>
         <p className="text-lg text-gray-500">Select a portal to continue</p>
       </div>
-      
+
       <div className="flex gap-6 mt-8">
-        <button 
+        <button
           onClick={() => navigate('/sales')}
-          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:border-indigo-100 transition w-64 group"
+          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:border-indigo-100 transition w-64 group cursor-pointer"
         >
           <div className="p-5 bg-indigo-50 text-indigo-600 rounded-full group-hover:scale-110 transition-transform">
             <ShoppingCart size={48} />
           </div>
           <span className="text-xl font-bold text-gray-800">Sales Portal</span>
         </button>
-        
-        <button 
-          onClick={handleAdminDashboard}
-          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:border-purple-100 transition w-64 group"
+
+        <button
+          onClick={() => navigate('/purchases')}
+          className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:border-emerald-100 transition w-64 group cursor-pointer"
         >
-          <div className="p-5 bg-purple-50 text-purple-600 rounded-full group-hover:scale-110 transition-transform">
-            <LayoutDashboard size={48} />
+          <div className="p-5 bg-emerald-50 text-emerald-600 rounded-full group-hover:scale-110 transition-transform">
+            <ArrowRightLeft size={48} />
           </div>
-          <span className="text-xl font-bold text-gray-800">Admin Dashboard</span>
+          <span className="text-xl font-bold text-gray-800">Purchases Portal</span>
         </button>
+
+        {user?.role === 'administrator' && (
+          <button
+            onClick={handleAdminDashboard}
+            className="flex flex-col items-center gap-4 p-8 bg-white rounded-2xl shadow-md border border-gray-100 hover:shadow-lg hover:border-purple-100 transition w-64 group cursor-pointer"
+          >
+            <div className="p-5 bg-purple-50 text-purple-600 rounded-full group-hover:scale-110 transition-transform">
+              <LayoutDashboard size={48} />
+            </div>
+            <span className="text-xl font-bold text-gray-800">Admin Dashboard</span>
+          </button>
+        )}
       </div>
     </div>
   );

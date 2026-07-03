@@ -12,13 +12,15 @@ import ProductTrackerPage from './pages/ProductTrackerPage';
 import InternalUpdatesPage from './pages/InternalUpdatesPage';
 import PreviousSales from './pages/PreviousSales';
 import CustomersPage from './pages/CustomersPage';
+import AccountSettings from './pages/AccountSettings';
+import UserSettingsPage from './pages/UserSettingsPage';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        
+
         {/* Protected Routes inside Layout */}
         <Route element={<Layout />}>
           <Route path="/" element={<Navigate to="/home" replace />} />
@@ -32,6 +34,8 @@ function App() {
           <Route path="/internal-updates" element={<InternalUpdatesPage />} />
           <Route path="/previous-sales" element={<PreviousSales />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/account-settings" element={<AccountSettings />} />
+          <Route path="/user-settings" element={<UserSettingsPage />} />
         </Route>
       </Routes>
     </Router>
