@@ -10,18 +10,11 @@ export async function registerUser(username, password, role, db) {
             return "Already exists";
         } else {
             // Password Hashing
-            bcrypt.hash(password, saltRounds, async (err, hash) => {
-                if (err) {
-                    console.log("Error hashing password", err);
-                    return "error"
-                } else {
-                    const result = await db.query("INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", [
-                        username, hash, role
-                    ]);
-                    console.log(result);
-                    return result;
-                }
-            })
+            const hash = await bcrypt.hash(password, saltRounds);
+            const result = await db.query("INSERT INTO users (username, password, role) VALUES ($1, $2, $3)", [
+                username, hash, role
+            ]);
+            return result;
         }
     } catch (err) {
         console.error(err)
@@ -77,21 +70,9 @@ export async function changeUserPassword(userId, oldPassword, newPassword, db) {
             });
 
             if (passwordMatch) {
-                return await new Promise((resolve, reject) => {
-                    bcrypt.hash(newPassword, saltRounds, async (err, hash) => {
-                        if (err) {
-                            console.log("Error hashing password", err);
-                            reject(err);
-                        } else {
-                            try {
-                                await db.query("UPDATE users SET password = $1 WHERE id = $2", [hash, userId]);
-                                resolve({ success: true });
-                            } catch (updateErr) {
-                                reject(updateErr);
-                            }
-                        }
-                    });
-                });
+                const hash = await bcrypt.hash(newPassword, saltRounds);
+                await db.query("UPDATE users SET password = $1 WHERE id = $2", [hash, userId]);
+                return { success: true };
             } else {
                 return { success: false, message: "Wrong current password" };
             }

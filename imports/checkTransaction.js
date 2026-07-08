@@ -101,6 +101,6 @@ export default async function checkTransaction(startDate, endDate, transactionTy
 
     } catch (error) {
         console.error('Database Error during transaction search:', error.message || error);
-        return 'Failed to retrieve transactions due to a server error.';
+        throw new Error('Failed to retrieve transactions due to a server error.');
     }
 } 

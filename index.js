@@ -24,6 +24,10 @@ import checkTransaction from './imports/checkTransaction.js';
 import savePurchase from './imports/addPurchase.js';
 // importing internal stock updates
 import { saveReturn, removeStock } from './imports/internalStockUpdates.js';
+// import analytics module
+import * as analytics from './imports/analytics.js';
+// import dashboard data module
+import * as dashboardData from './imports/dashboardData.js';
 // Importing adjustment logic
 import adjustment from './imports/adjustmentLogic.js';
 
@@ -174,12 +178,14 @@ app.get("/api/dashboard", async (req, res) => {
     try {
         const allUsers = await db.query('SELECT username, role FROM users');
         const salesData = await db.query("SELECT ast.name, change_type, quantity_change, unit_selling_price, last_cost_price FROM stock_changes AS sc JOIN all_stocks AS ast ON sc.product_id = ast.id WHERE sc.change_type = 'Sales' ORDER BY change_date DESC LIMIT 15");
-        const purchases = await db.query("SELECT ast.name, pli.quantity_purchased, TO_CHAR(pli.purchase_date, 'YYYY-MM-DD') AS purchase_date FROM purchase_line_items AS pli JOIN all_stocks AS ast ON pli.product_id = ast.id ORDER BY purchase_date DESC LIMIT 5");
+        const stockValueResult = await db.query("SELECT COALESCE(SUM(total_quantity_in_stock * last_cost_price), 0) AS total_stock_value FROM all_stocks");
+        const customersCount = await db.query("SELECT COUNT(*) FROM customers");
 
         res.json({
             users: allUsers.rows,
             recentSales: salesData.rows,
-            recentPurchases: purchases.rows,
+            totalStockValue: stockValueResult.rows[0].total_stock_value,
+            totalCustomers: parseInt(customersCount.rows[0].count)
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -237,6 +243,128 @@ app.get("/api/productTracker", async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ********* Analytics Routes
+app.get("/api/analytics/main", async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        if (!startDate || !endDate) return res.status(400).json({ success: false, message: "Date range is required" });
+        const metrics = await analytics.getMainMetrics(startDate, endDate, db);
+        res.json({ success: true, ...metrics });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get("/api/analytics/staff", async (req, res) => {
+    try {
+        const { staffId, startDate, endDate } = req.query;
+        if (!startDate || !endDate) return res.status(400).json({ success: false, message: "Date range is required" });
+        const staffPerformance = await analytics.getStaffPerformance(staffId, startDate, endDate, db);
+        res.json({ success: true, data: staffPerformance });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get("/api/analytics/customers", async (req, res) => {
+    try {
+        const { search, page = 1 } = req.query;
+        const limit = 15;
+        const offset = (parseInt(page) - 1) * limit;
+        const customerData = await analytics.getCustomersAnalytics(search, offset, limit, db);
+        res.json({ success: true, ...customerData });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get("/api/analytics/products", async (req, res) => {
+    try {
+        const { startDate, endDate, limit, sort } = req.query;
+        if (!startDate || !endDate) return res.status(400).json({ success: false, message: "Date range is required" });
+        const productData = await analytics.getProductPerformance(startDate, endDate, limit, sort, db);
+        res.json({ success: true, data: productData });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// ********* Dashboard Data Routes
+app.get("/api/expenses", async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        if (!startDate || !endDate) return res.status(400).json({ success: false, message: "Date range is required" });
+        const expenses = await dashboardData.getExpenses(startDate, endDate, db);
+        res.json({ success: true, expenses });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post("/api/expenses", async (req, res) => {
+    try {
+        const { amount, description, date } = req.body;
+        if (!amount || !description || !date) return res.status(400).json({ success: false, message: "Missing required fields" });
+        const userId = req.user ? req.user.id : null;
+        const newExpense = await dashboardData.addExpense(amount, description, date, userId, db);
+        res.json({ success: true, expense: newExpense });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.delete("/api/expenses/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        await dashboardData.deleteExpense(id, db);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.get("/api/banks", async (req, res) => {
+    try {
+        const banks = await dashboardData.getBanks(db);
+        res.json({ success: true, banks });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post("/api/banks", async (req, res) => {
+    try {
+        const { bankName, accountNumber } = req.body;
+        if (!bankName) return res.status(400).json({ success: false, message: "Bank name is required" });
+        const newBank = await dashboardData.addBank(bankName, accountNumber, db);
+        res.json({ success: true, bank: newBank });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.put("/api/banks/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { bankName, accountNumber } = req.body;
+        if (!bankName) return res.status(400).json({ success: false, message: "Bank name is required" });
+        const updatedBank = await dashboardData.updateBank(id, bankName, accountNumber, db);
+        res.json({ success: true, bank: updatedBank });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.delete("/api/banks/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        await dashboardData.deleteBank(id, db);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
@@ -429,9 +557,39 @@ app.get("/api/track-product", async (req, res) => {
 // Fetch all stocks
 app.get("/api/all-inventory", async (req, res) => {
     try {
-        const result = await db.query(`
+        const { page = 1, limit = 10, search = '', filter = '' } = req.query;
+        const limitVal = limit === 'all' ? null : parseInt(limit);
+        const offset = limit === 'all' ? 0 : (parseInt(page) - 1) * limitVal;
+        
+        let queryParams = [];
+        let countParams = [];
+        let whereConditions = [];
+
+        if (search) {
+            whereConditions.push(`(ast.name ILIKE $1 OR ctg.name ILIKE $1 OR ast.generic_name ILIKE $1 OR ast.barcode ILIKE $1)`);
+            queryParams.push(`%${search}%`);
+            countParams.push(`%${search}%`);
+        }
+
+        if (filter === 'reorder') {
+            whereConditions.push(`ast.total_quantity_in_stock <= ast.reorder_level AND ast.total_quantity_in_stock > 0`);
+        } else if (filter === 'zero') {
+            whereConditions.push(`ast.total_quantity_in_stock = 0`);
+        }
+
+        let whereClause = whereConditions.length > 0 ? "WHERE " + whereConditions.join(" AND ") : "";
+
+        const countQuery = `
+            SELECT COUNT(*) 
+            FROM all_stocks ast
+            LEFT JOIN categories ctg ON ast.category_id = ctg.id
+            ${whereClause}
+        `;
+        
+        let queryText = `
             SELECT 
                 ast.id,
+                ast.barcode,
                 ast.name,
                 ast.generic_name,
                 ast.last_cost_price,
@@ -446,24 +604,32 @@ app.get("/api/all-inventory", async (req, res) => {
             FROM all_stocks ast
             LEFT JOIN units ON ast.unit_id = units.id
             LEFT JOIN categories ctg ON ast.category_id = ctg.id
+            ${whereClause}
             ORDER BY ast.name ASC
-            `);
+        `;
+
+        if (limitVal !== null) {
+            queryParams.push(limitVal);
+            queryText += ` LIMIT $${queryParams.length}`;
+            
+            queryParams.push(offset);
+            queryText += ` OFFSET $${queryParams.length}`;
+        }
+
+        const [countResult, result] = await Promise.all([
+            db.query(countQuery, countParams),
+            db.query(queryText, queryParams)
+        ]);
 
         const inventory = result.rows;
+        const totalCount = parseInt(countResult.rows[0].count, 10);
 
-        if (inventory.length > 0) {
-            res.json({
-                success: true,
-                message: `${inventory.length} items(s) found!`,
-                contents: inventory
-            });
-        } else {
-            res.status(404).json({
-                success: false,
-                message: "No inventory items found.",
-                contents: []
-            });
-        }
+        res.json({
+            success: true,
+            message: inventory.length > 0 ? `${inventory.length} items(s) found!` : "No inventory items found.",
+            contents: inventory,
+            totalCount: totalCount
+        });
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -473,22 +639,121 @@ app.get("/api/all-inventory", async (req, res) => {
     }
 });
 
-// Track Product
-app.get("/api/track-product", async (req, res) => {
-    const { productId, startDate, stopDate } = req.query;
+// Delete stock item
+app.delete("/api/delete-item/:id", async (req, res) => {
+    const { id } = req.params;
     try {
-        const result = await db.query(`
-            SELECT sc.*, u.username 
-            FROM stock_changes sc
-            LEFT JOIN users u ON sc.user_id = u.id
-            WHERE sc.product_id = $1 
-            AND sc.change_date >= $2 
-            AND sc.change_date < ($3::date + interval '1 day')
-            ORDER BY sc.change_date DESC
-        `, [productId, startDate, stopDate]);
-        res.json({ success: true, contents: result.rows });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        await db.query('DELETE FROM all_stocks WHERE id = $1', [id]);
+        res.json({ success: true, message: 'Item deleted successfully' });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: `Couldn't delete item. It might be referenced in other records.`,
+            error: error.message
+        });
+    }
+});
+
+// Add Stock Item
+app.post("/api/addStock", async (req, res) => {
+    const { name, genericName, barcode, category, unit, cost, price, reorderLevel, description } = req.body;
+    try {
+        const catRes = await db.query('SELECT id FROM categories WHERE name = $1', [category]);
+        const categoryId = catRes.rows.length > 0 ? catRes.rows[0].id : null;
+
+        const unitRes = await db.query('SELECT id FROM units WHERE name = $1', [unit]);
+        const unitId = unitRes.rows.length > 0 ? unitRes.rows[0].id : null;
+
+        const insertQuery = `
+            INSERT INTO all_stocks 
+            (name, generic_name, barcode, category_id, unit_id, last_cost_price, unit_selling_price, reorder_level, description, total_quantity_in_stock)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0)
+            RETURNING *;
+        `;
+        const values = [
+            name, 
+            genericName || null, 
+            barcode || null,
+            categoryId, 
+            unitId, 
+            cost || 0, 
+            price || 0, 
+            reorderLevel || 0, 
+            description || null
+        ];
+        
+        const result = await db.query(insertQuery, values);
+        res.json({ success: true, message: 'Product saved successfully!', item: result.rows[0] });
+    } catch (error) {
+        console.error('Error adding stock:', error);
+        res.status(500).json({ success: false, message: 'Failed to save product: ' + error.message });
+    }
+});
+
+// Update Stock Item
+app.put("/api/update-item", async (req, res) => {
+    const { id, name, genericName, barcode, category, unit, cost, price, reorderLevel, description, quantity } = req.body;
+    try {
+        const catRes = await db.query('SELECT id FROM categories WHERE name = $1', [category]);
+        const categoryId = catRes.rows.length > 0 ? catRes.rows[0].id : null;
+
+        const unitRes = await db.query('SELECT id FROM units WHERE name = $1', [unit]);
+        const unitId = unitRes.rows.length > 0 ? unitRes.rows[0].id : null;
+
+        const updateQuery = `
+            UPDATE all_stocks 
+            SET name = $1, generic_name = $2, barcode = $3, category_id = $4, unit_id = $5, 
+                last_cost_price = $6, unit_selling_price = $7, reorder_level = $8, description = $9,
+                last_updated_date = CURRENT_TIMESTAMP
+            WHERE id = $10
+            RETURNING *;
+        `;
+        const values = [
+            name, 
+            genericName || null, 
+            barcode || null,
+            categoryId, 
+            unitId, 
+            cost || 0, 
+            price || 0, 
+            reorderLevel || 0, 
+            description || null, 
+            id
+        ];
+        
+        const result = await db.query(updateQuery, values);
+        let updatedItem = result.rows[0];
+
+        if (quantity !== undefined && quantity !== null && quantity !== '') {
+            const currentQty = Number(updatedItem.total_quantity_in_stock);
+            const newQty = Number(quantity);
+            const adjustmentQty = newQty - currentQty;
+
+            if (adjustmentQty !== 0) {
+                const userId = req.user ? req.user.id : 1;
+                const adjustmentItem = {
+                    item_id: id,
+                    adjustment_qty: adjustmentQty,
+                    current_qty: currentQty,
+                    last_cost_price: updatedItem.last_cost_price
+                };
+                
+                const client = await db.connect();
+                try {
+                    await adjustment(client, userId, [adjustmentItem]);
+                } finally {
+                    client.release();
+                }
+
+                const freshRes = await db.query('SELECT * FROM all_stocks WHERE id = $1', [id]);
+                updatedItem = freshRes.rows[0];
+            }
+        }
+
+        res.json({ success: true, message: 'Product updated successfully!', item: updatedItem });
+    } catch (error) {
+        console.error('Error updating stock:', error);
+        res.status(500).json({ success: false, message: 'Failed to update product: ' + error.message });
     }
 });
 
@@ -554,13 +819,14 @@ app.post("/api/process-purchase", async (req, res) => {
     const userId = req.user ? req.user.id : 1;
     const client = await db.connect();
     try {
-        await client.query('BEGIN');
-        await savePurchase(client, userId, req.body);
-        await client.query('COMMIT');
-        res.status(201).json({ success: true, message: "Purchase processed successfully!" });
+        await savePurchase(userId, req.body, client, res);
+        if (!res.headersSent) {
+            res.status(201).json({ success: true, message: "Purchase processed successfully!" });
+        }
     } catch (err) {
-        await client.query('ROLLBACK');
-        res.status(err.status || 500).json({ success: false, message: err.message });
+        if (!res.headersSent) {
+            res.status(err.status || 500).json({ success: false, message: err.message });
+        }
     } finally { client.release(); }
 });
 
@@ -1059,6 +1325,91 @@ app.put('/api/users/:id', isAdmin, async (req, res) => {
         } else {
             res.status(500).json({ success: false, message: err.message });
         }
+    }
+});
+
+// CSV Import Endpoints
+const allowedTables = ['all_stocks', 'customers', 'suppliers', 'categories', 'units', 'companies'];
+
+app.get('/api/schema/:tableName', async (req, res) => {
+    try {
+        const { tableName } = req.params;
+        if (!allowedTables.includes(tableName)) {
+            return res.status(403).json({ success: false, message: "Table not allowed for import" });
+        }
+
+        const result = await db.query(`
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_name = $1 AND table_schema = 'public';
+        `, [tableName]);
+
+        // Filter out auto-generated ID columns
+        const columns = result.rows.filter(col => col.column_name !== 'id');
+
+        res.json({ success: true, schema: columns });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/import', async (req, res) => {
+    try {
+        const { tableName, mappings, data } = req.body;
+        
+        if (!allowedTables.includes(tableName)) {
+            return res.status(403).json({ success: false, message: "Table not allowed for import" });
+        }
+        
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data provided" });
+        }
+
+        // Get actual schema to validate mappings
+        const schemaResult = await db.query(`
+            SELECT column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_name = $1 AND table_schema = 'public';
+        `, [tableName]);
+        const schemaCols = schemaResult.rows.map(r => r.column_name);
+
+        const targetCols = Object.keys(mappings).filter(col => schemaCols.includes(col));
+        if (targetCols.length === 0) {
+            return res.status(400).json({ success: false, message: "No valid mappings provided" });
+        }
+
+        await db.query('BEGIN');
+        
+        let insertedCount = 0;
+        for (const row of data) {
+            const cols = [];
+            const vals = [];
+            const params = [];
+            let pCounter = 1;
+
+            for (const tCol of targetCols) {
+                const csvCol = mappings[tCol];
+                if (row[csvCol] !== undefined && row[csvCol] !== null && row[csvCol] !== "") {
+                    cols.push(tCol);
+                    params.push(row[csvCol]);
+                    vals.push(`$${pCounter}`);
+                    pCounter++;
+                }
+            }
+
+            if (cols.length > 0) {
+                const query = `INSERT INTO ${tableName} (${cols.join(', ')}) VALUES (${vals.join(', ')})`;
+                await db.query(query, params);
+                insertedCount++;
+            }
+        }
+        
+        await db.query('COMMIT');
+        res.json({ success: true, message: `Successfully imported ${insertedCount} rows into ${tableName}` });
+    } catch (err) {
+        await db.query('ROLLBACK');
+        console.error("Bulk import error:", err);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 

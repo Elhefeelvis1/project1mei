@@ -182,7 +182,7 @@ const Layout = () => {
       {!isSales && !isPurchase && <Sidebar user={user} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />}
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {(isSales || isPurchase) && <Navbar user={user} />}
-        <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8 ${(!isSales && !isPurchase) ? isCollapsed ? 'pl-26' : 'pl-70' : ''} ${(isSales || isPurchase) ? 'pt-18' : ''}`}>
+        <main className={`flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8 ${(!isSales && !isPurchase && !isCollapsed) ? 'pl-70' : ''} ${(isSales || isPurchase) ? 'pt-18' : ''}`}>
           <Outlet context={{ user }} />
         </main>
       </div>

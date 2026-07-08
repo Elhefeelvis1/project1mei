@@ -6,7 +6,7 @@ export default async function savePurchase(userId, purchaseData, db, res) {
 
         const items = purchaseData.items;
         const supplierId = purchaseData.supplierId;
-        
+
         // 1. Initial Validation
         if (!userId || !Array.isArray(items) || items.length === 0) {
             await db.query('ROLLBACK');
@@ -16,7 +16,7 @@ export default async function savePurchase(userId, purchaseData, db, res) {
         // 2. Create Purchase Header
         const purchaseResult = await db.query(
             `INSERT INTO purchases (user_id, total_amount, supplier_id) VALUES ($1, $2, $3) RETURNING id;`,
-            [userId, 0.00, supplierId] 
+            [userId, 0.00, supplierId]
         );
         const purchaseId = purchaseResult.rows[0].id;
 
@@ -61,7 +61,7 @@ export default async function savePurchase(userId, purchaseData, db, res) {
                 `SELECT total_quantity_in_stock FROM all_stocks WHERE id = $1`,
                 [productId]
             );
-            
+
             const newTotalStock = parseInt(stockCheck.rows[0].total_quantity_in_stock);
             const oldTotalStock = newTotalStock - quantity; // Because the lot insert already added the quantity
 
@@ -93,7 +93,7 @@ export default async function savePurchase(userId, purchaseData, db, res) {
             `UPDATE purchases SET total_amount = $1 WHERE id = $2;`,
             [totalPurchaseAmount, purchaseId]
         );
-        
+
         await db.query('COMMIT');
         return { success: true, purchaseId: purchaseId };
 
