@@ -37,6 +37,7 @@ const ImportCsvPage = () => {
 
   // Step 4 State: Import
   const [importing, setImporting] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -130,6 +131,43 @@ const ImportCsvPage = () => {
 
   // Execute Import
   const executeImport = async () => {
+    setValidating(true);
+    // Brief UX delay for validation state visibility
+    await new Promise(resolve => setTimeout(resolve, 800)); 
+
+    if (selectedTable === 'all_stocks') {
+      for (let i = 0; i < csvData.length; i++) {
+        const row = csvData[i];
+        const qtyCol = mappings['quantity'];
+        const quantity = qtyCol ? parseFloat(row[qtyCol]) : 0;
+        
+        if (quantity > 0) {
+            const expiryCol = mappings['expiry_date'];
+            const costCol = mappings['cost_per_unit'];
+            
+            if (!costCol || !row[costCol]) {
+                setValidating(false);
+                showToast('error', `Validation Failed: Row ${i + 1} has quantity > 0 but is missing a cost per unit.`);
+                return;
+            }
+
+            if (expiryCol && row[expiryCol] && String(row[expiryCol]).trim() !== '') {
+                const expiryDate = new Date(row[expiryCol]);
+                const currentDate = new Date();
+                currentDate.setHours(0, 0, 0, 0);
+
+                if (expiryDate < currentDate) {
+                    setValidating(false);
+                    const itemName = mappings['name'] ? row[mappings['name']] : 'Unknown Item';
+                    showToast('error', `Validation Failed: Item "${itemName}" on row ${i + 1} has an expiry date in the past.`);
+                    return;
+                }
+            }
+        }
+      }
+    }
+    
+    setValidating(false);
     setImporting(true);
     try {
       const payload = {
@@ -137,7 +175,10 @@ const ImportCsvPage = () => {
         mappings,
         data: csvData
       };
-      const res = await axios.post('/api/import', payload);
+      
+      const endpoint = selectedTable === 'all_stocks' ? '/api/import/stocks' : '/api/import';
+      const res = await axios.post(endpoint, payload);
+      
       if (res.data.success) {
         showToast('success', res.data.message);
         setImportSuccess(true);
@@ -381,10 +422,12 @@ const ImportCsvPage = () => {
                   </button>
                   <button 
                     onClick={executeImport} 
-                    disabled={importing}
+                    disabled={importing || validating}
                     className="px-8 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition shadow-md flex items-center gap-2 disabled:opacity-50"
                   >
-                    {importing ? (
+                    {validating ? (
+                      <>Validating CSV <div className="animate-pulse flex space-x-1 ml-1"><div className="h-1.5 w-1.5 bg-white rounded-full"></div><div className="h-1.5 w-1.5 bg-white rounded-full"></div><div className="h-1.5 w-1.5 bg-white rounded-full"></div></div></>
+                    ) : importing ? (
                       <>Processing <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div></>
                     ) : (
                       <>Confirm & Import</>

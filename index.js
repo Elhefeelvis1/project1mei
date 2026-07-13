@@ -30,14 +30,16 @@ import * as analytics from './imports/analytics.js';
 import * as dashboardData from './imports/dashboardData.js';
 // Importing adjustment logic
 import adjustment from './imports/adjustmentLogic.js';
+// Importing csv import logic
+import * as csvImport from './imports/csvImport.js';
 
 const app = express();
 const port = 3000;
 const saltRounds = 5;
 env.config();
 
-app.use(express.json()); // To parse JSON bodies
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' })); // To parse JSON bodies
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static("public"));
 
 // Express Session
@@ -54,22 +56,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Global functions
-function addLabel(name, tableName, req, res) {
-    if (addEdit.addNew(name, tableName, db)) {
-        res.status(201).json({ success: true, message: `New ${name} successfully added to ${tableName}` });
-    } else {
-        res.status(400).json({ success: false, message: `${name} not added, try again!` });
-    }
-}
-
-function editLabel(name, id, tableName, req, res) {
-    if (addEdit.addNew(name, id, tableName, db)) {
-        res.status(200).json({ success: true, message: `${name} successfully edited in ${tableName}` });
-    } else {
-        res.status(400).json({ success: false, message: `${name} not edited, try again!` });
-    }
-}
+// Global functions removed for labels
 
 //Starting database connection
 db.connect();
@@ -128,7 +115,7 @@ app.post('/api/change-password', async (req, res) => {
     }
 
     const { oldPassword, newPassword } = req.body;
-    
+
     if (!oldPassword || !newPassword) {
         return res.status(400).json({ message: 'Both old and new passwords are required' });
     }
@@ -560,7 +547,7 @@ app.get("/api/all-inventory", async (req, res) => {
         const { page = 1, limit = 10, search = '', filter = '' } = req.query;
         const limitVal = limit === 'all' ? null : parseInt(limit);
         const offset = limit === 'all' ? 0 : (parseInt(page) - 1) * limitVal;
-        
+
         let queryParams = [];
         let countParams = [];
         let whereConditions = [];
@@ -585,7 +572,7 @@ app.get("/api/all-inventory", async (req, res) => {
             LEFT JOIN categories ctg ON ast.category_id = ctg.id
             ${whereClause}
         `;
-        
+
         let queryText = `
             SELECT 
                 ast.id,
@@ -611,7 +598,7 @@ app.get("/api/all-inventory", async (req, res) => {
         if (limitVal !== null) {
             queryParams.push(limitVal);
             queryText += ` LIMIT $${queryParams.length}`;
-            
+
             queryParams.push(offset);
             queryText += ` OFFSET $${queryParams.length}`;
         }
@@ -656,34 +643,55 @@ app.delete("/api/delete-item/:id", async (req, res) => {
 
 // Add Stock Item
 app.post("/api/addStock", async (req, res) => {
-    const { name, genericName, barcode, category, unit, cost, price, reorderLevel, description } = req.body;
+    const { name, genericName, barcode, category, unit, cost, price, reorderLevel, description, quantity } = req.body;
     try {
+        const nameCheck = await db.query('SELECT id FROM all_stocks WHERE name = $1', [name]);
+        if (nameCheck.rows.length > 0) {
+            return res.status(400).json({ success: false, message: 'Item name already exists!' });
+        }
+
         const catRes = await db.query('SELECT id FROM categories WHERE name = $1', [category]);
         const categoryId = catRes.rows.length > 0 ? catRes.rows[0].id : null;
 
         const unitRes = await db.query('SELECT id FROM units WHERE name = $1', [unit]);
         const unitId = unitRes.rows.length > 0 ? unitRes.rows[0].id : null;
 
+        const initialQuantity = Number(quantity) > 0 ? Number(quantity) : 0;
+        const userId = req.user?.id || req.session?.passport?.user || 1;
+
         const insertQuery = `
             INSERT INTO all_stocks 
-            (name, generic_name, barcode, category_id, unit_id, last_cost_price, unit_selling_price, reorder_level, description, total_quantity_in_stock)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0)
+            (name, generic_name, barcode, category_id, unit_id, last_cost_price, unit_selling_price, reorder_level, description, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *;
         `;
         const values = [
-            name, 
-            genericName || null, 
+            name,
+            genericName || null,
             barcode || null,
-            categoryId, 
-            unitId, 
-            cost || 0, 
-            price || 0, 
-            reorderLevel || 0, 
-            description || null
+            categoryId,
+            unitId,
+            cost || 0,
+            price || 0,
+            reorderLevel || 0,
+            description || null,
+            userId
         ];
-        
+
         const result = await db.query(insertQuery, values);
-        res.json({ success: true, message: 'Product saved successfully!', item: result.rows[0] });
+        const newItem = result.rows[0];
+
+        if (initialQuantity > 0) {
+            const items = [{
+                item_id: newItem.id,
+                adjustment_qty: initialQuantity,
+                current_qty: 0,
+                last_cost_price: cost || 0
+            }];
+            await adjustment(db, userId, items);
+        }
+
+        res.json({ success: true, message: 'Product saved successfully!', item: newItem });
     } catch (error) {
         console.error('Error adding stock:', error);
         res.status(500).json({ success: false, message: 'Failed to save product: ' + error.message });
@@ -709,18 +717,18 @@ app.put("/api/update-item", async (req, res) => {
             RETURNING *;
         `;
         const values = [
-            name, 
-            genericName || null, 
+            name,
+            genericName || null,
             barcode || null,
-            categoryId, 
-            unitId, 
-            cost || 0, 
-            price || 0, 
-            reorderLevel || 0, 
-            description || null, 
+            categoryId,
+            unitId,
+            cost || 0,
+            price || 0,
+            reorderLevel || 0,
+            description || null,
             id
         ];
-        
+
         const result = await db.query(updateQuery, values);
         let updatedItem = result.rows[0];
 
@@ -737,7 +745,7 @@ app.put("/api/update-item", async (req, res) => {
                     current_qty: currentQty,
                     last_cost_price: updatedItem.last_cost_price
                 };
-                
+
                 const client = await db.connect();
                 try {
                     await adjustment(client, userId, [adjustmentItem]);
@@ -881,8 +889,13 @@ app.post("/api/searchTransactions", async (req, res) => {
                 return acc + (parseFloat(curr.gross_revenue_impact) || 0);
             }, 0);
 
+            const processedSaleIds = new Set();
             const totalDiscount = transactionsWithRevenue.reduce((acc, curr) => {
-                return acc + (parseFloat(curr.sale_discount) || 0);
+                if (curr.change_type === 'Sales' && curr.sale_id && !processedSaleIds.has(curr.sale_id)) {
+                    processedSaleIds.add(curr.sale_id);
+                    return acc + (parseFloat(curr.sale_discount) || 0);
+                }
+                return acc;
             }, 0);
 
             const payRouteTotals = {};
@@ -895,7 +908,7 @@ app.post("/api/searchTransactions", async (req, res) => {
                     payRouteTotals[transaction.pay_route] += impact;
                 }
             });
-            
+
             for (const route in payRouteTotals) {
                 payRouteTotals[route] = payRouteTotals[route].toFixed(2);
             }
@@ -970,7 +983,7 @@ app.post("/api/searchSales", async (req, res) => {
             ORDER BY s.sale_date DESC
         `;
         const salesResult = await db.query(salesQuery, params);
-        
+
         if (salesResult.rows.length === 0) {
             return res.json({ success: true, sales: [] });
         }
@@ -1103,7 +1116,7 @@ app.post("/api/process-expired", async (req, res) => {
 //********Register new / Edit user 
 app.post("/api/editUser", async (req, res) => {
     let id = req.body.userId;
-    let username = req.body.username;
+    let username = req.body.username ? req.body.username.toLowerCase() : null;
     let password = req.body.password;
     let role = req.body.role;
 
@@ -1155,7 +1168,7 @@ app.post("/api/editUser", async (req, res) => {
 });
 
 app.post("/api/registerUser", async (req, res) => {
-    let username = req.body.username;
+    let username = req.body.username ? req.body.username.toLowerCase() : null;
     let password = req.body.password;
     let role = req.body.role;
 
@@ -1245,19 +1258,6 @@ app.post("/api/addNewCustomer", async (req, res) => {
     }
 });
 
-// Label routes
-app.post("/api/editUnit", (req, res) => editLabel(req.body.unit, req.body.unitId, 'units', req, res));
-app.post("/api/addNewUnit", (req, res) => addLabel(req.body.unit, 'units', req, res));
-
-app.post("/api/editCategory", (req, res) => editLabel(req.body.category, req.body.categoryId, 'categories', req, res));
-app.post("/api/addNewCategory", (req, res) => addLabel(req.body.category, 'categories', req, res));
-
-app.post("/api/editSupplier", (req, res) => editLabel(req.body.supplier, req.body.supplierId, 'suppliers', req, res));
-app.post("/api/addNewSupplier", (req, res) => addLabel(req.body.supplier, 'suppliers', req, res));
-
-app.post("/api/editCompany", (req, res) => editLabel(req.body.company, req.body.companyId, 'companies', req, res));
-app.post("/api/addNewCompany", (req, res) => addLabel(req.body.company, 'companies', req, res));
-
 // User Settings endpoints (Admin Only)
 const isAdmin = (req, res, next) => {
     if (req.isAuthenticated() && req.user && req.user.role === 'administrator') {
@@ -1265,6 +1265,76 @@ const isAdmin = (req, res, next) => {
     }
     res.status(403).json({ success: false, message: 'Forbidden: Admins only' });
 };
+
+// Label routes (Admin Only)
+app.get('/api/labels/:type', isAdmin, async (req, res) => {
+    const validTables = ['suppliers', 'categories', 'units', 'companies'];
+    const tableName = req.params.type;
+    
+    if (!validTables.includes(tableName)) {
+        return res.status(400).json({ success: false, message: 'Invalid label type' });
+    }
+
+    try {
+        const result = await db.query(`SELECT id, name FROM ${tableName} ORDER BY id ASC`);
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/labels/:type', isAdmin, async (req, res) => {
+    const validTables = ['suppliers', 'categories', 'units', 'companies'];
+    const tableName = req.params.type;
+    const { name } = req.body;
+    
+    if (!validTables.includes(tableName)) return res.status(400).json({ success: false, message: 'Invalid label type' });
+    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+
+    try {
+        const newItem = await addEdit.addNew(name, tableName, db);
+        res.status(201).json({ success: true, data: newItem, message: `Successfully added to ${tableName}` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.put('/api/labels/:type/:id', isAdmin, async (req, res) => {
+    const validTables = ['suppliers', 'categories', 'units', 'companies'];
+    const tableName = req.params.type;
+    const id = parseInt(req.params.id, 10);
+    const { name } = req.body;
+    
+    if (!validTables.includes(tableName)) return res.status(400).json({ success: false, message: 'Invalid label type' });
+    if (isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+
+    try {
+        const updatedItem = await addEdit.edit(name, id, tableName, db);
+        res.json({ success: true, data: updatedItem, message: `Successfully updated in ${tableName}` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.delete('/api/labels/:type/:id', isAdmin, async (req, res) => {
+    const validTables = ['suppliers', 'categories', 'units', 'companies'];
+    const tableName = req.params.type;
+    const id = parseInt(req.params.id, 10);
+    
+    if (!validTables.includes(tableName)) return res.status(400).json({ success: false, message: 'Invalid label type' });
+    if (isNaN(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
+
+    try {
+        const deletedItem = await addEdit.deleteLabel(id, tableName, db);
+        res.json({ success: true, data: deletedItem, message: `Successfully deleted from ${tableName}` });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+
+// User Settings endpoints (Admin Only)
 
 app.get('/api/users', isAdmin, async (req, res) => {
     try {
@@ -1277,6 +1347,7 @@ app.get('/api/users', isAdmin, async (req, res) => {
 
 app.post('/api/users', isAdmin, async (req, res) => {
     let { username, password, role } = req.body;
+    if (username) username = username.toLowerCase();
     try {
         const result = await userAuth.registerUser(username, password, role, db);
         if (result === "Already exists") {
@@ -1293,7 +1364,8 @@ app.post('/api/users', isAdmin, async (req, res) => {
 
 app.put('/api/users/:id', isAdmin, async (req, res) => {
     const targetUserId = parseInt(req.params.id, 10);
-    const { username, role } = req.body;
+    let { username, role } = req.body;
+    if (username) username = username.toLowerCase();
     try {
         const result = await db.query('UPDATE users SET username = $1, role = $2 WHERE id = $3 RETURNING *', [username, role, targetUserId]);
         if (result.rowCount > 0) {
@@ -1320,7 +1392,7 @@ app.put('/api/users/:id', isAdmin, async (req, res) => {
             res.status(404).json({ success: false, message: 'User not found' });
         }
     } catch (err) {
-        if (err.code === '23505') { 
+        if (err.code === '23505') {
             res.status(409).json({ success: false, message: 'Username already exists' });
         } else {
             res.status(500).json({ success: false, message: err.message });
@@ -1329,12 +1401,10 @@ app.put('/api/users/:id', isAdmin, async (req, res) => {
 });
 
 // CSV Import Endpoints
-const allowedTables = ['all_stocks', 'customers', 'suppliers', 'categories', 'units', 'companies'];
-
 app.get('/api/schema/:tableName', async (req, res) => {
     try {
         const { tableName } = req.params;
-        if (!allowedTables.includes(tableName)) {
+        if (!csvImport.allowedTables.includes(tableName)) {
             return res.status(403).json({ success: false, message: "Table not allowed for import" });
         }
 
@@ -1344,8 +1414,30 @@ app.get('/api/schema/:tableName', async (req, res) => {
             WHERE table_name = $1 AND table_schema = 'public';
         `, [tableName]);
 
-        // Filter out auto-generated ID columns
-        const columns = result.rows.filter(col => col.column_name !== 'id');
+        // Filter out auto-generated ID columns and audit fields
+        let columns = result.rows.filter(col =>
+            col.column_name !== 'id' &&
+            col.column_name !== 'entry_date' &&
+            col.column_name !== 'last_updated_date' &&
+            col.column_name !== 'user_id'
+        );
+
+        if (tableName === 'all_stocks') {
+            // Remove raw ID columns so they are not mapped directly (replaced with string equivalents)
+            columns = columns.filter(col =>
+                !['unit_id', 'category_id', 'company_id', 'total_quantity_in_stock'].includes(col.column_name)
+            );
+
+            // Add virtual string columns for foreign keys
+            columns.push({ column_name: 'unit', data_type: 'text', is_nullable: 'NO' });
+            columns.push({ column_name: 'category', data_type: 'text', is_nullable: 'YES' });
+            columns.push({ column_name: 'company', data_type: 'text', is_nullable: 'YES' });
+
+            // Add stock_lots virtual columns
+            columns.push({ column_name: 'quantity', data_type: 'integer', is_nullable: 'YES' });
+            columns.push({ column_name: 'cost_per_unit', data_type: 'numeric', is_nullable: 'YES' });
+            columns.push({ column_name: 'expiry_date', data_type: 'date', is_nullable: 'YES' });
+        }
 
         res.json({ success: true, schema: columns });
     } catch (err) {
@@ -1353,65 +1445,8 @@ app.get('/api/schema/:tableName', async (req, res) => {
     }
 });
 
-app.post('/api/import', async (req, res) => {
-    try {
-        const { tableName, mappings, data } = req.body;
-        
-        if (!allowedTables.includes(tableName)) {
-            return res.status(403).json({ success: false, message: "Table not allowed for import" });
-        }
-        
-        if (!data || data.length === 0) {
-            return res.status(400).json({ success: false, message: "No data provided" });
-        }
-
-        // Get actual schema to validate mappings
-        const schemaResult = await db.query(`
-            SELECT column_name, data_type, is_nullable
-            FROM information_schema.columns
-            WHERE table_name = $1 AND table_schema = 'public';
-        `, [tableName]);
-        const schemaCols = schemaResult.rows.map(r => r.column_name);
-
-        const targetCols = Object.keys(mappings).filter(col => schemaCols.includes(col));
-        if (targetCols.length === 0) {
-            return res.status(400).json({ success: false, message: "No valid mappings provided" });
-        }
-
-        await db.query('BEGIN');
-        
-        let insertedCount = 0;
-        for (const row of data) {
-            const cols = [];
-            const vals = [];
-            const params = [];
-            let pCounter = 1;
-
-            for (const tCol of targetCols) {
-                const csvCol = mappings[tCol];
-                if (row[csvCol] !== undefined && row[csvCol] !== null && row[csvCol] !== "") {
-                    cols.push(tCol);
-                    params.push(row[csvCol]);
-                    vals.push(`$${pCounter}`);
-                    pCounter++;
-                }
-            }
-
-            if (cols.length > 0) {
-                const query = `INSERT INTO ${tableName} (${cols.join(', ')}) VALUES (${vals.join(', ')})`;
-                await db.query(query, params);
-                insertedCount++;
-            }
-        }
-        
-        await db.query('COMMIT');
-        res.json({ success: true, message: `Successfully imported ${insertedCount} rows into ${tableName}` });
-    } catch (err) {
-        await db.query('ROLLBACK');
-        console.error("Bulk import error:", err);
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
+app.post('/api/import', async (req, res) => csvImport.importGenericCsv(req, res, db));
+app.post('/api/import/stocks', async (req, res) => csvImport.importStocksCsv(req, res, db));
 
 app.put('/api/users/:id/password', isAdmin, async (req, res) => {
     const targetUserId = parseInt(req.params.id, 10);
@@ -1435,7 +1470,7 @@ app.put('/api/users/:id/password', isAdmin, async (req, res) => {
 
         const hash = await bcrypt.hash(newPassword, saltRounds);
         const updateResult = await db.query("UPDATE users SET password = $1 WHERE id = $2", [hash, targetUserId]);
-        
+
         if (updateResult.rowCount > 0) {
             res.json({ success: true, message: 'Password updated successfully' });
         } else {
@@ -1491,6 +1526,7 @@ app.post("/api/logout", (req, res) => {
 
 // Passport Authentication
 passport.use("local", new Strategy(async function verify(username, password, cb) {
+    if (username) username = username.toLowerCase();
     try {
         let user = await userAuth.loginUser(username, password, db);
         if (user == "wrong password") {

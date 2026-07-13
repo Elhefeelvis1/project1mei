@@ -99,7 +99,7 @@ const ProductSearch = ({ categories, onAddToCart }) => {
                             const added = onAddToCart(item);
                             setIsSearchResultsModalOpen(false);
                             setSearchQuery({ itemName: '', category: '', minPrice: '', maxPrice: '' });
-                            if (!added) {
+                            if (added === false) {
                               showToast('error', `${item.item_name} is already in the cart!`);
                             }
                           }}

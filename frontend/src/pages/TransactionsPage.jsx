@@ -7,8 +7,8 @@ const TransactionsPage = () => {
   const [searchParams, setSearchParams] = useState({
     startDate: '',
     endDate: '',
-    transactionType: '',
-    userId: 0,
+    transactionType: 'all',
+    userId: 'all',
   });
 
   const [results, setResults] = useState([]);
@@ -56,12 +56,10 @@ const TransactionsPage = () => {
 
     const today = new Date();
     const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const firstDayStr = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-    
+
     setSearchParams(prev => ({
       ...prev,
-      startDate: firstDayStr,
+      startDate: todayStr,
       endDate: todayStr
     }));
   }, []);
@@ -75,7 +73,7 @@ const TransactionsPage = () => {
     try {
       const allItems = results;
       if (allItems.length === 0) return;
-      
+
       const headers = ["Date", "Item", "Type", "Qty Change", "Unit Price", "Total Price", "User", "Customer", "Pay Route"];
       const rows = allItems.map(row => [
         new Date(row.transaction_date || row.change_date).toLocaleDateString(),
@@ -88,12 +86,12 @@ const TransactionsPage = () => {
         row.customer_name || 'N/A',
         row.pay_route || 'N/A'
       ]);
-      
+
       const csvContent = [
         headers.join(","),
         ...rows.map(r => r.map(v => `"${(v || '').toString().replace(/"/g, '""')}"`).join(","))
       ].join("\n");
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -176,7 +174,7 @@ const TransactionsPage = () => {
               value={searchParams.userId}
               onChange={e => setSearchParams({ ...searchParams, userId: e.target.value })}
             >
-              <option value="0">All Users</option>
+              <option value="all">All Users</option>
               {users.map(u => <option key={u.id} value={u.id}>{u.username}</option>)}
             </select>
           </div>
@@ -260,7 +258,7 @@ const TransactionsPage = () => {
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1 relative group cursor-help">
               <p className="text-sm text-gray-500 font-medium">Total Sales Revenue</p>
               <p className="text-2xl font-bold text-gray-900">₦{totals.salesRevenue}</p>
-              
+
               {totals.payRouteTotals && Object.keys(totals.payRouteTotals).length > 0 && (
                 <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 shadow-xl rounded-lg p-3 hidden group-hover:block z-10 transition-all opacity-0 group-hover:opacity-100">
                   <p className="text-xs font-bold text-gray-700 border-b border-gray-100 pb-2 mb-2 uppercase tracking-wider">Pay Routes</p>

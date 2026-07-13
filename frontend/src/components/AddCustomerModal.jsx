@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { User, Phone, MapPin, Mail, FileText, X } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
-const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData = null }) => {
+const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData = null, customers = [] }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     phone_number: '',
@@ -46,6 +48,12 @@ const AddCustomerModal = ({ isOpen, onClose, onSuccess, initialData = null }) =>
     e.preventDefault();
     if (!formData.name) {
       setError('Name is required');
+      return;
+    }
+
+    const nameExists = customers.some(c => c.name.toLowerCase() === formData.name.trim().toLowerCase() && c.id !== initialData?.id);
+    if (nameExists) {
+      showToast('error', 'Customer name already exists!');
       return;
     }
 

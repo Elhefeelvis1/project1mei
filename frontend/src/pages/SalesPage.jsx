@@ -30,6 +30,7 @@ const SalesPage = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerResults, setCustomerResults] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [processing, setProcessing] = useState(false);
 
   // Customer notes state
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -70,6 +71,10 @@ const SalesPage = () => {
   }, [customerName, selectedCustomer]);
 
   const addToCart = (item) => {
+    if (item.total_quantity_in_stock <= 0) {
+      showToast('error', 'Item is out of stock.');
+      return 'error';
+    }
     const exists = cart.find(i => i.item_id === item.item_id);
     if (!exists) {
       setCart([...cart, { ...item, quantity: 1, selling_price: parseFloat(item.unit_selling_price || 0) }]);
@@ -82,6 +87,11 @@ const SalesPage = () => {
 
   const updateCartQuantity = (id, newQuantity) => {
     if (newQuantity === '' || Number(newQuantity) >= 1) {
+      const itemInCart = cart.find(i => i.item_id === id);
+      if (itemInCart && Number(newQuantity) > itemInCart.total_quantity_in_stock) {
+        showToast('error', `Cannot sell more than available stock (${itemInCart.total_quantity_in_stock}).`);
+        return;
+      }
       setCart(cart.map(i => i.item_id === id ? { ...i, quantity: newQuantity } : i));
     }
   };
@@ -105,13 +115,15 @@ const SalesPage = () => {
   const handleCheckout = async () => {
     if (cart.length === 0) return showToast('error', 'Cart is empty');
     if (!paymentRoute) return showToast('error', 'Select a payment route');
-    if (paymentRoute === 'Transfer' && !selectedBank) return showToast('error', 'Select a bank for transfer');
+    if ((paymentRoute === 'Transfer' || paymentRoute === 'POS') && !selectedBank) return showToast('error', `Select a bank for ${paymentRoute}`);
     if (required && !selectedCustomer) return showToast('error', 'Select a customer');
 
     const invalidItem = cart.find(item => item.quantity === '' || Number(item.quantity) < 1);
     if (invalidItem) {
       return showToast('error', `Please enter a valid quantity for ${invalidItem.item_name}`);
     }
+
+    setProcessing(true);
 
     const payload = {
       items: cart.map(item => ({
@@ -128,6 +140,8 @@ const SalesPage = () => {
 
     try {
       await axios.post('/api/process-sale', payload);
+
+      setProcessing(false);
       showToast('success', 'Sale processed successfully!');
 
       const receiptData = {
@@ -155,7 +169,8 @@ const SalesPage = () => {
       }, 500);
     } catch (err) {
       console.error(err);
-      showToast('error', 'Failed to process sale.');
+      setProcessing(false);
+      showToast('error', err.response?.data?.message || 'Failed to process sale.');
     }
   };
 
@@ -225,7 +240,7 @@ const SalesPage = () => {
                     <option value="Credit">Credit</option>
                   </select>
                 </div>
-                {paymentRoute === 'Transfer' && (
+                {(paymentRoute === 'Transfer' || paymentRoute === 'POS') && (
                   <div>
                     <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-1">
                       <Building size={16} /> Bank
@@ -336,10 +351,11 @@ const SalesPage = () => {
                 Clear
               </button>
               <button
+                disabled={processing}
                 onClick={handleCheckout}
-                className="flex-1 px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200"
+                className={`flex-1 px-6 py-3 text-white font-bold rounded-xl transition shadow-lg ${processing ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200"}`}
               >
-                Complete Sale
+                {processing ? "Processing..." : "Complete Sale"}
               </button>
             </div>
           </div>

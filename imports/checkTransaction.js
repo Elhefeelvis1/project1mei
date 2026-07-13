@@ -29,7 +29,7 @@ export default async function checkTransaction(startDate, endDate, transactionTy
     }
 
     // Convert user input to integer and validate
-    if (user !== undefined && user !== null) {
+    if (user !== undefined && user !== null && user !== 'all') {
         const parsedUser = parseInt(user, 10);
         if (!isNaN(parsedUser) && parsedUser > 0) {
             queryParts.push(`sc.user_id = $${paramCounter}`);

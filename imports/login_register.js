@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 const saltRounds = 5;
 
 export async function registerUser(username, password, role, db) {
+    if (username) username = username.toLowerCase();
 
     try {
         const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
@@ -22,6 +23,7 @@ export async function registerUser(username, password, role, db) {
 }
 
 export async function loginUser(username, password, db) {
+    if (username) username = username.toLowerCase();
     try {
         const result = await db.query("SELECT * FROM users WHERE username = $1", [username]);
         const data = result.rows;

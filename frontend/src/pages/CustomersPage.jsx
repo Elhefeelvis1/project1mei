@@ -138,6 +138,7 @@ const CustomersPage = () => {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleModalSuccess}
         initialData={editingCustomer}
+        customers={customers}
       />
     </div>
   );

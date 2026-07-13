@@ -24,12 +24,20 @@ export default async function savePurchase(userId, purchaseData, db, res) {
 
         // 3. Loop through items
         for (const item of items) {
-            const { productId, quantity, unitCost, unitSellPrice, expiryDate } = item;
+            const { item_id: productId, quantity, unit_cost: unitCost, unit_price: unitSellPrice, expiry_date: expiryDate } = item;
 
             // Strict Validation
-            if (quantity <= 0 || unitCost <= 0 || !productId || !expiryDate) {
+            if (quantity <= 0 || unitCost <= 0 || !productId || !expiryDate || String(expiryDate).trim() === '') {
                 await db.query('ROLLBACK');
-                return res.status(400).json({ message: `Invalid item data for Product ID: ${productId}` });
+                return res.status(400).json({ message: `Invalid item data or missing expiry date for Product ID: ${productId}` });
+            }
+
+            const eDate = new Date(expiryDate);
+            const currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0);
+            if (eDate < currentDate) {
+                await db.query('ROLLBACK');
+                return res.status(400).json({ message: `Product ID: ${productId} has an expiry date in the past.` });
             }
 
             const lineTotalCost = quantity * unitCost;

@@ -6,13 +6,13 @@ async function saveReturn(client, userId, data) {
 
     for (const item of items) {
         const { productId, quantity, expiryDate } = item;
-        
+
         // 1. Find Closest Lot
         const lotRes = await client.query(`
-            SELECT lot_id, quantity, cost_per_unit,
+            SELECT lot_id, quantity_in_lot, cost_per_unit,
                    ABS(expiry_date::date - $2::date) AS diff
             FROM stock_lots WHERE product_id = $1
-            ORDER BY diff ASC, expiry_date ASC LIMIT 1`, 
+            ORDER BY diff ASC, expiry_date ASC LIMIT 1`,
             [productId, expiryDate]
         );
 
@@ -24,7 +24,7 @@ async function saveReturn(client, userId, data) {
 
         // 2. Update Lot Quantity
         const updateRes = await client.query(
-            `UPDATE stock_lots SET quantity = quantity + $1 WHERE lot_id = $2 RETURNING quantity`,
+            `UPDATE stock_lots SET quantity_in_lot = quantity_in_lot + $1 WHERE lot_id = $2 RETURNING quantity_in_lot`,
             [quantity, lot.lot_id]
         );
 
@@ -48,28 +48,27 @@ async function saveReturn(client, userId, data) {
 
 async function removeStock(client, userId, data, type) {
     const items = data.items;
-    
+
     for (const item of items) {
         const { productId, quantity } = item;
         let remainingToRemove = quantity;
 
         // Find lots using FEFO (First Expired First Out)
         const lotsRes = await client.query(
-            `SELECT lot_id, quantity, cost_per_unit FROM stock_lots 
-             WHERE product_id = $1 AND quantity > 0 ORDER BY expiry_date ASC`,
+            `SELECT lot_id, quantity_in_lot, cost_per_unit FROM stock_lots 
+             WHERE product_id = $1 AND quantity_in_lot > 0 ORDER BY expiry_date ASC`,
             [productId]
         );
 
         for (const lot of lotsRes.rows) {
             if (remainingToRemove <= 0) break;
 
-            const take = Math.min(remainingToRemove, lot.quantity);
-            
+            const take = Math.min(remainingToRemove, lot.quantity_in_lot);
+
             // Update Lot
             const upd = await client.query(
-                `UPDATE stock_lots SET quantity = quantity - $1, 
-                 status = CASE WHEN (quantity - $1) = 0 THEN 'CLEARED' ELSE status END
-                 WHERE lot_id = $2 RETURNING quantity`,
+                `UPDATE stock_lots SET quantity_in_lot = quantity_in_lot - $1 
+                 WHERE lot_id = $2 RETURNING quantity_in_lot`,
                 [take, lot.lot_id]
             );
 

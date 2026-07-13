@@ -21,7 +21,7 @@ const Home = () => {
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8 bg-white rounded-xl shadow-sm border border-gray-100 p-12">
         <div className="text-center">
           <h1 className="text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
-            Welcome to ShopKeeper{user ? `, ${user.username}` : ''}
+            Welcome to ShopKeeper{user ? <>, <span className="capitalize">{user.username}</span></> : ''}
           </h1>
           <p className="text-lg text-gray-500">Select a portal to continue</p>
         </div>

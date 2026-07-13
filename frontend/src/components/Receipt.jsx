@@ -42,13 +42,17 @@ const Receipt = ({ receiptData }) => {
             </tr>
           </thead>
           <tbody>
-            {items?.map((item, idx) => (
-              <tr key={idx}>
-                <td className="py-1 pr-1 truncate max-w-[140px]">{item.itemName || item.item_name || 'Item'}</td>
-                <td className="py-1 text-center">{item.quantity}</td>
-                <td className="py-1 text-right">{(item.sellPrice * item.quantity).toFixed(2)}</td>
-              </tr>
-            ))}
+            {items?.map((item, idx) => {
+              const itemPrice = parseFloat(item.sellPrice || item.selling_price || 0);
+              const qty = parseFloat(item.quantity || 0);
+              return (
+                <tr key={idx}>
+                  <td className="py-1 pr-1 break-words max-w-[140px] align-top">{item.itemName || item.item_name || 'Item'}</td>
+                  <td className="py-1 text-center whitespace-nowrap align-top">{qty} x {itemPrice.toFixed(2)}</td>
+                  <td className="py-1 text-right align-top">{(itemPrice * qty).toFixed(2)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

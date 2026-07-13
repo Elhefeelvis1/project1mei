@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Users, FileText, LogOut,
-  Wrench, History, ChevronLeft, ChevronRight, Settings, UserCog, Locate, ChartNoAxesCombined, Home
+  Wrench, History, ChevronLeft, ChevronRight, Settings, UserCog, Locate, ChartNoAxesCombined, Home, Tags
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -30,6 +30,7 @@ const Sidebar = ({ user, isCollapsed, setIsCollapsed }) => {
     { name: 'Previous Sales', path: '/previous-sales', icon: <History size={20} /> },
     { name: 'Customers', path: '/customers', icon: <Users size={20} /> },
     { name: 'User Settings', path: '/user-settings', icon: <UserCog size={20} /> },
+    { name: 'Edit Labels', path: '/labels', icon: <Tags size={20} /> },
   ];
 
   return (
