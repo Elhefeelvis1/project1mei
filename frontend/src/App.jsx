@@ -16,7 +16,6 @@ import AccountSettings from './pages/AccountSettings';
 import UserSettingsPage from './pages/UserSettingsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ImportCsvPage from './pages/ImportCsvPage';
-import LabelsPage from './pages/LabelsPage';
 import { ToastProvider } from './context/ToastContext';
 
 function AppContent() {
@@ -42,7 +41,6 @@ function AppContent() {
           <Route path="/user-settings" element={<UserSettingsPage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
           <Route path="/import-csv" element={<ImportCsvPage />} />
-          <Route path="/labels" element={<LabelsPage />} />
         </Route>
       </Routes>
     </Router>

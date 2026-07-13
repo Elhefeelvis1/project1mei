@@ -1,12 +1,13 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 const Receipt = ({ receiptData }) => {
   if (!receiptData) return null;
 
   const { shopDetails, date, items, totalAmount, totalDiscount, amountPaid, payRoute, salesRep } = receiptData;
 
-  return (
-    <div id="receipt-container" className="hidden print:block w-[300px] text-black bg-white p-4 font-mono text-sm leading-tight mx-auto absolute top-0 left-0 min-h-screen z-[9999]">
+  const content = (
+    <div id="receipt-container" className="hidden print:block w-[300px] text-black bg-white p-4 font-mono text-sm leading-tight mx-auto absolute top-0 left-0 z-[9999]">
       <div className="text-center mb-4">
         {shopDetails?.shopLogo && shopDetails.shopLogo !== 'https://example.com/logo.png' && (
           <img src={shopDetails.shopLogo} alt="Logo" className="w-16 mx-auto mb-2 grayscale" />
@@ -80,6 +81,8 @@ const Receipt = ({ receiptData }) => {
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };
 
 export default Receipt;

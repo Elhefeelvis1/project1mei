@@ -15,6 +15,9 @@ body {
 }
 
 @media print {
+  #root {
+    display: none !important;
+  }
   body * {
     visibility: hidden;
   }

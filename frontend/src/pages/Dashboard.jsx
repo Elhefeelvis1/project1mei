@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import axios from 'axios';
-import { TrendingUp, Users, DollarSign, Package, Settings, Save } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, Package, Settings, Save, LayoutDashboard, Store, Receipt, Landmark, Tags } from 'lucide-react';
 import DashboardExpenses from '../components/Dashboard/DashboardExpenses';
 import DashboardBanks from '../components/Dashboard/DashboardBanks';
+import Labels from '../components/Labels';
 import { useToast } from '../context/ToastContext';
 
 const Dashboard = () => {
@@ -86,10 +87,11 @@ const Dashboard = () => {
           <p className="text-gray-500 mt-1">Welcome back. Manage your shop and view metrics.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'overview' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Overview</button>
-          <button onClick={() => setActiveTab('shopInfo')} className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'shopInfo' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Shop Info</button>
-          <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'expenses' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Expenses</button>
-          <button onClick={() => setActiveTab('banks')} className={`px-4 py-2 rounded-lg font-medium transition ${activeTab === 'banks' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Banks</button>
+          <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'overview' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><LayoutDashboard size={18} /> Overview</button>
+          <button onClick={() => setActiveTab('shopInfo')} className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'shopInfo' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Store size={18} /> Shop Info</button>
+          <button onClick={() => setActiveTab('expenses')} className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'expenses' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Receipt size={18} /> Expenses</button>
+          <button onClick={() => setActiveTab('banks')} className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'banks' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Landmark size={18} /> Banks</button>
+          <button onClick={() => setActiveTab('labels')} className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${activeTab === 'labels' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Tags size={18} /> Labels</button>
         </div>
       </div>
 
@@ -221,6 +223,12 @@ const Dashboard = () => {
       {activeTab === 'expenses' && <DashboardExpenses />}
       
       {activeTab === 'banks' && <DashboardBanks />}
+
+      {activeTab === 'labels' && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+          <Labels />
+        </div>
+      )}
     </div>
   );
 };
