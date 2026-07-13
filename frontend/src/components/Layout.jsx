@@ -29,8 +29,8 @@ const Sidebar = ({ user, isCollapsed, setIsCollapsed }) => {
     { name: 'Product Tracker', path: '/tracker', icon: <Locate size={20} /> },
     { name: 'Previous Sales', path: '/previous-sales', icon: <History size={20} /> },
     { name: 'Customers', path: '/customers', icon: <Users size={20} /> },
-    { name: 'User Settings', path: '/user-settings', icon: <UserCog size={20} /> },
     { name: 'Edit Labels', path: '/labels', icon: <Tags size={20} /> },
+    { name: 'User Settings', path: '/user-settings', icon: <UserCog size={20} /> },
   ];
 
   return (
