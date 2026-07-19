@@ -184,9 +184,11 @@ app.get("/api/stockPage", async (req, res) => {
     try {
         const categories = await db.query('SELECT name FROM categories');
         const units = await db.query('SELECT name FROM units');
+        const companies = await db.query('SELECT name FROM companies');
         res.json({
             categories: categories.rows,
             units: units.rows,
+            companies: companies.rows,
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -583,6 +585,7 @@ app.get("/api/all-inventory", async (req, res) => {
                 ast.unit_selling_price,
                 units.name AS unit,
                 ctg.name AS category,
+                cmp.name AS company,
                 ast.reorder_level,
                 ast.description,
                 ast.total_quantity_in_stock,
@@ -591,6 +594,7 @@ app.get("/api/all-inventory", async (req, res) => {
             FROM all_stocks ast
             LEFT JOIN units ON ast.unit_id = units.id
             LEFT JOIN categories ctg ON ast.category_id = ctg.id
+            LEFT JOIN companies cmp ON ast.company_id = cmp.id
             ${whereClause}
             ORDER BY ast.name ASC
         `;
@@ -643,7 +647,7 @@ app.delete("/api/delete-item/:id", async (req, res) => {
 
 // Add Stock Item
 app.post("/api/addStock", async (req, res) => {
-    const { name, genericName, barcode, category, unit, cost, price, reorderLevel, description, quantity } = req.body;
+    const { name, genericName, barcode, category, company, unit, cost, price, reorderLevel, description, quantity } = req.body;
     try {
         const nameCheck = await db.query('SELECT id FROM all_stocks WHERE name = $1', [name]);
         if (nameCheck.rows.length > 0) {
@@ -656,13 +660,16 @@ app.post("/api/addStock", async (req, res) => {
         const unitRes = await db.query('SELECT id FROM units WHERE name = $1', [unit]);
         const unitId = unitRes.rows.length > 0 ? unitRes.rows[0].id : null;
 
+        const compRes = await db.query('SELECT id FROM companies WHERE name = $1', [company]);
+        const companyId = compRes.rows.length > 0 ? compRes.rows[0].id : null;
+
         const initialQuantity = Number(quantity) > 0 ? Number(quantity) : 0;
         const userId = req.user?.id || req.session?.passport?.user || 1;
 
         const insertQuery = `
             INSERT INTO all_stocks 
-            (name, generic_name, barcode, category_id, unit_id, last_cost_price, unit_selling_price, reorder_level, description, user_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            (name, generic_name, barcode, category_id, unit_id, company_id, last_cost_price, unit_selling_price, reorder_level, description, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *;
         `;
         const values = [
@@ -671,6 +678,7 @@ app.post("/api/addStock", async (req, res) => {
             barcode || null,
             categoryId,
             unitId,
+            companyId,
             cost || 0,
             price || 0,
             reorderLevel || 0,
@@ -700,7 +708,7 @@ app.post("/api/addStock", async (req, res) => {
 
 // Update Stock Item
 app.put("/api/update-item", async (req, res) => {
-    const { id, name, genericName, barcode, category, unit, cost, price, reorderLevel, description, quantity } = req.body;
+    const { id, name, genericName, barcode, category, company, unit, cost, price, reorderLevel, description, quantity } = req.body;
     try {
         const catRes = await db.query('SELECT id FROM categories WHERE name = $1', [category]);
         const categoryId = catRes.rows.length > 0 ? catRes.rows[0].id : null;
@@ -708,12 +716,15 @@ app.put("/api/update-item", async (req, res) => {
         const unitRes = await db.query('SELECT id FROM units WHERE name = $1', [unit]);
         const unitId = unitRes.rows.length > 0 ? unitRes.rows[0].id : null;
 
+        const compRes = await db.query('SELECT id FROM companies WHERE name = $1', [company]);
+        const companyId = compRes.rows.length > 0 ? compRes.rows[0].id : null;
+
         const updateQuery = `
             UPDATE all_stocks 
-            SET name = $1, generic_name = $2, barcode = $3, category_id = $4, unit_id = $5, 
-                last_cost_price = $6, unit_selling_price = $7, reorder_level = $8, description = $9,
+            SET name = $1, generic_name = $2, barcode = $3, category_id = $4, unit_id = $5, company_id = $6, 
+                last_cost_price = $7, unit_selling_price = $8, reorder_level = $9, description = $10,
                 last_updated_date = CURRENT_TIMESTAMP
-            WHERE id = $10
+            WHERE id = $11
             RETURNING *;
         `;
         const values = [
@@ -722,6 +733,7 @@ app.put("/api/update-item", async (req, res) => {
             barcode || null,
             categoryId,
             unitId,
+            companyId,
             cost || 0,
             price || 0,
             reorderLevel || 0,

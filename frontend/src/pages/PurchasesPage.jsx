@@ -11,6 +11,10 @@ const PurchasesPage = () => {
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
 
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const [cart, setCart] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState('');
   const [highlightedCartRow, setHighlightedCartRow] = useState(null);
@@ -26,6 +30,7 @@ const PurchasesPage = () => {
         setSuppliers(purchRes.data.suppliers || []);
       } catch (err) {
         console.error('Failed to load initial data', err);
+        showToast('error', err.response?.data?.message || 'Failed to load initial data.');
       }
     };
     fetchInitialData();
@@ -74,7 +79,7 @@ const PurchasesPage = () => {
       setSelectedSupplier('');
     } catch (err) {
       console.error(err);
-      showToast('error', 'Failed to process purchase.');
+      showToast('error', err.response?.data?.message || 'Failed to process purchase.');
     }
   };
 
@@ -107,7 +112,7 @@ const PurchasesPage = () => {
             {user.role === "administrator" && (
               <div className="flex justify-between items-center py-4 border-y border-gray-100">
                 <span className="text-sm text-gray-500 font-medium">Total Purchase</span>
-                <span className="text-2xl font-black text-gray-900">₦{total.toFixed(2)}</span>
+                <span className="text-2xl font-black text-gray-900">₦{formatMoney(total)}</span>
               </div>
             )}
 
@@ -185,7 +190,7 @@ const PurchasesPage = () => {
                       </td>
                       {user.role === "administrator" && (
                         <td className="px-4 py-3 text-right font-medium text-indigo-600">
-                          ₦{(parseFloat(item.unit_cost || 0) * parseInt(item.quantity || 0)).toFixed(2)}
+                          ₦{formatMoney(parseFloat(item.unit_cost || 0) * parseInt(item.quantity || 0))}
                         </td>
                       )}
                       <td className="px-4 py-3 text-center">

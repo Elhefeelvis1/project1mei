@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Edit, FileText, Barcode, Tag, Scale, DollarSign, Percent, AlertCircle } from 'lucide-react';
+import { Package, Edit, FileText, Barcode, Tag, Scale, DollarSign, Percent, AlertCircle, Building } from 'lucide-react';
 
 const StockItemModal = ({
   isOpen,
@@ -9,6 +9,7 @@ const StockItemModal = ({
   setFormData,
   categories,
   units,
+  companies,
   handlePricingChange,
   handleSubmit,
   onDeleteClick
@@ -101,6 +102,26 @@ const StockItemModal = ({
                 >
                   <option value="">Select Category...</option>
                   {categories.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Building size={14} className="text-slate-400" /> Company
+              </label>
+              <div className="relative group">
+                <select
+                  required
+                  className="w-full px-4 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 outline-none transition-colors duration-200 text-slate-800 text-sm font-medium appearance-none cursor-pointer"
+                  value={formData.company}
+                  onChange={e => setFormData({ ...formData, company: e.target.value })}
+                >
+                  <option value="">Select Company...</option>
+                  {companies?.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
                 </select>
                 <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>

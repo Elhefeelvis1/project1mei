@@ -16,6 +16,10 @@ const ProductTrackerPage = () => {
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState('');
 
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -218,7 +222,7 @@ const ProductTrackerPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-gray-800">{row.quantity_change}</td>
-                      <td className="px-6 py-4 text-right text-gray-600">₦{row.cost_impact || 0}</td>
+                      <td className="px-6 py-4 text-right text-gray-600">₦{formatMoney(row.cost_impact)}</td>
                       <td className="px-6 py-4 text-gray-500">{row.lot_id || '-'}</td>
                       <td className="px-6 py-4 text-gray-600 font-medium">{row.username || 'System'}</td>
                     </tr>

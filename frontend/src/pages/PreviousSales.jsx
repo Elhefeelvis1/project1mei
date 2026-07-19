@@ -30,6 +30,10 @@ const PreviousSales = () => {
   const { user } = useOutletContext() || {};
   const showProfit = user?.role === 'administrator';
 
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   // Statistics
   const [stats, setStats] = useState({
     totalCount: 0,
@@ -266,7 +270,7 @@ const PreviousSales = () => {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Net Revenue</p>
-              <p className="text-2xl font-bold text-gray-900 mt-0.5">₦{stats.totalRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-0.5">₦{formatMoney(stats.totalRevenue)}</p>
             </div>
           </div>
         )}
@@ -277,7 +281,7 @@ const PreviousSales = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Discounts Given</p>
-            <p className="text-2xl font-bold text-gray-900 mt-0.5">₦{stats.totalDiscount.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-0.5">₦{formatMoney(stats.totalDiscount)}</p>
           </div>
         </div>
 
@@ -289,7 +293,7 @@ const PreviousSales = () => {
             <div>
               <p className="text-sm font-medium text-gray-500">Net Profit (Margin)</p>
               <p className="text-2xl font-bold text-gray-900 mt-0.5">
-                ₦{stats.totalProfit.toFixed(2)}{' '}
+                ₦{formatMoney(stats.totalProfit)}{' '}
                 <span className="text-sm font-medium text-emerald-600">
                   ({stats.profitMargin.toFixed(1)}%)
                 </span>
@@ -445,9 +449,9 @@ const PreviousSales = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right text-rose-600 font-medium">
-                          {parseFloat(sale.discount_applied) > 0 ? `₦${parseFloat(sale.discount_applied).toFixed(2)}` : '—'}
+                          {parseFloat(sale.discount_applied) > 0 ? `₦${formatMoney(sale.discount_applied)}` : '—'}
                         </td>
-                        <td className="px-6 py-4 text-right font-bold text-gray-900">₦{parseFloat(sale.total_amount).toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right font-bold text-gray-900">₦{formatMoney(sale.total_amount)}</td>
                         <td className="px-6 py-4 text-center">
                           <button
                             onClick={() => toggleExpandRow(sale.sale_id)}
@@ -499,12 +503,12 @@ const PreviousSales = () => {
                                           <tr key={item.line_item_id} className="hover:bg-gray-50/50">
                                             <td className="px-4 py-3 font-semibold text-gray-800">{item.product_name}</td>
                                             <td className="px-4 py-3 text-center font-medium text-gray-600">{item.quantity_sold}</td>
-                                            <td className="px-4 py-3 text-right text-gray-600">₦{parseFloat(item.selling_price_per_unit).toFixed(2)}</td>
-                                            {showProfit && <td className="px-4 py-3 text-right text-gray-500">₦{lineCost.toFixed(2)}</td>}
-                                            <td className="px-4 py-3 text-right font-semibold text-gray-800">₦{lineSellingTotal.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-right text-gray-600">₦{formatMoney(item.selling_price_per_unit)}</td>
+                                            {showProfit && <td className="px-4 py-3 text-right text-gray-500">₦{formatMoney(lineCost)}</td>}
+                                            <td className="px-4 py-3 text-right font-semibold text-gray-800">₦{formatMoney(lineSellingTotal)}</td>
                                             {showProfit && (
                                               <td className={`px-4 py-3 text-right font-semibold ${lineProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                ₦{lineProfit.toFixed(2)}
+                                                ₦{formatMoney(lineProfit)}
                                               </td>
                                             )}
                                           </tr>
@@ -533,20 +537,20 @@ const PreviousSales = () => {
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-right">
                                   <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">COGS</span>
-                                    <p className="text-sm font-semibold text-gray-700">₦{itemCost.toFixed(2)}</p>
+                                    <p className="text-sm font-semibold text-gray-700">₦{formatMoney(itemCost)}</p>
                                   </div>
                                   <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Discount</span>
-                                    <p className="text-sm font-semibold text-rose-600">₦{parseFloat(sale.discount_applied).toFixed(2)}</p>
+                                    <p className="text-sm font-semibold text-rose-600">₦{formatMoney(sale.discount_applied)}</p>
                                   </div>
                                   <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Net Total</span>
-                                    <p className="text-sm font-bold text-gray-900">₦{parseFloat(sale.total_amount).toFixed(2)}</p>
+                                    <p className="text-sm font-bold text-gray-900">₦{formatMoney(sale.total_amount)}</p>
                                   </div>
                                   <div>
                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Profit (Margin)</span>
                                     <p className={`text-sm font-black ${saleProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                      ₦{saleProfit.toFixed(2)} ({saleProfitMargin.toFixed(1)}%)
+                                      ₦{formatMoney(saleProfit)} ({saleProfitMargin.toFixed(1)}%)
                                     </p>
                                   </div>
                                 </div>

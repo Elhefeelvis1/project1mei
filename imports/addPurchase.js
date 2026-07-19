@@ -24,12 +24,13 @@ export default async function savePurchase(userId, purchaseData, db, res) {
 
         // 3. Loop through items
         for (const item of items) {
-            const { item_id: productId, quantity, unit_cost: unitCost, unit_price: unitSellPrice, expiry_date: expiryDate } = item;
+            const { item_id: productId, item_name: itemName, quantity, unit_cost: unitCost, unit_price: unitSellPrice, expiry_date: expiryDate } = item;
+            const displayName = itemName || `Product ID: ${productId}`;
 
             // Strict Validation
             if (quantity <= 0 || unitCost <= 0 || !productId || !expiryDate || String(expiryDate).trim() === '') {
                 await db.query('ROLLBACK');
-                return res.status(400).json({ message: `Invalid item data or missing expiry date for Product ID: ${productId}` });
+                return res.status(400).json({ message: `Invalid item data or missing expiry date for ${displayName}` });
             }
 
             const eDate = new Date(expiryDate);
@@ -37,7 +38,12 @@ export default async function savePurchase(userId, purchaseData, db, res) {
             currentDate.setHours(0, 0, 0, 0);
             if (eDate < currentDate) {
                 await db.query('ROLLBACK');
-                return res.status(400).json({ message: `Product ID: ${productId} has an expiry date in the past.` });
+                return res.status(400).json({ message: `${displayName} has an expiry date in the past.` });
+            }
+
+            if (parseFloat(unitCost) > parseFloat(unitSellPrice)) {
+                await db.query('ROLLBACK');
+                return res.status(400).json({ message: `Unit cost cannot be greater than unit price for ${displayName}` });
             }
 
             const lineTotalCost = quantity * unitCost;

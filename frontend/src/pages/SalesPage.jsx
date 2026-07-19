@@ -18,6 +18,10 @@ const SalesPage = () => {
   const [receiptData, setReceiptData] = useState(null);
   const { user } = useOutletContext() || {};
 
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   // Cart state
   const [cart, setCart] = useState([]);
   const [discountPercent, setDiscountPercent] = useState('');
@@ -159,7 +163,11 @@ const SalesPage = () => {
       setCart([]);
       setDiscountPercent('');
       setDiscountValue('');
+      setPaymentRoute('');
+      setRequired(false);
+      setSelectedBank('');
       setCustomerName('');
+      setCustomerResults([]);
       setSelectedCustomer(null);
       setCustomerNotes('');
 
@@ -229,8 +237,8 @@ const SalesPage = () => {
                     className="w-full px-4 h-9 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-gray-700"
                     value={paymentRoute}
                     onChange={(e) => {
-                      setPaymentRoute(e.target.value)
-                      e.target.value === "Credit" && setRequired(true)
+                      setPaymentRoute(e.target.value);
+                      setRequired(e.target.value === "Credit");
                     }}
                   >
                     <option value="">Select Route</option>
@@ -310,7 +318,7 @@ const SalesPage = () => {
               <div className="space-y-3 px-4 py-2 col-span-4 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span className="font-medium">₦{total.toFixed(2)}</span>
+                  <span className="font-medium">₦{formatMoney(total)}</span>
                 </div>
                 <div className="flex gap-2">
                   <div className="flex-1">
@@ -334,11 +342,11 @@ const SalesPage = () => {
                 </div>
                 <div className="flex justify-between text-indigo-600">
                   <span>Discount</span>
-                  <span className="font-medium">-₦{discountAmount.toFixed(2)}</span>
+                  <span className="font-medium">-₦{formatMoney(discountAmount)}</span>
                 </div>
                 <div className="pt-3 border-t border-gray-200 flex justify-between items-center mt-2">
                   <span className="text-lg font-bold text-gray-800">Total</span>
-                  <span className="text-2xl font-black text-gray-900">₦{amountPayable.toFixed(2)}</span>
+                  <span className="text-2xl font-black text-gray-900">₦{formatMoney(amountPayable)}</span>
                 </div>
               </div>
             </div>
@@ -393,7 +401,7 @@ const SalesPage = () => {
                     {cart.map((item) => (
                       <tr key={item.item_id} className={`transition-colors ${highlightedCartRow === item.item_id ? 'bg-yellow-100' : 'bg-white hover:bg-gray-50'}`}>
                         <td className="px-4 py-3 font-semibold text-gray-800">{item.item_name}</td>
-                        <td className="px-4 py-3 text-gray-600">₦{item.selling_price}</td>
+                        <td className="px-4 py-3 text-gray-600">₦{formatMoney(item.selling_price)}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-center">
                             <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-gray-50 w-max">
@@ -415,7 +423,7 @@ const SalesPage = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-800">₦{(item.selling_price * item.quantity).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">₦{formatMoney(item.selling_price * item.quantity)}</td>
                         <td className="px-4 py-3 text-right">
                           <button
                             onClick={() => removeFromCart(item.item_id)}

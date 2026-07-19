@@ -11,10 +11,15 @@ const StockPage = () => {
   const [inventory, setInventory] = useState([]);
   const [categories, setCategories] = useState([]);
   const [units, setUnits] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -23,7 +28,7 @@ const StockPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', genericName: '', barcode: '', category: '', unit: '',
+    name: '', genericName: '', barcode: '', category: '', company: '', unit: '',
     cost: '', markup: '', price: '', reorderLevel: '', description: '', quantity: ''
   });
   const [ItemOnEdit, setItemOnEdit] = useState(null);
@@ -58,9 +63,10 @@ const StockPage = () => {
 
   const fetchOptions = async () => {
     try {
-      const optsRes = await axios.get('/api/stockPage').catch(() => ({ data: { categories: [], units: [] } }));
+      const optsRes = await axios.get('/api/stockPage').catch(() => ({ data: { categories: [], units: [], companies: [] } }));
       setCategories(optsRes.data.categories || []);
       setUnits(optsRes.data.units || []);
+      setCompanies(optsRes.data.companies || []);
     } catch (err) {
       console.error(err);
     }
@@ -120,7 +126,7 @@ const StockPage = () => {
   const handleAddNewClick = () => {
     setItemOnEdit(null);
     setFormData({
-      name: '', genericName: '', barcode: '', category: '', unit: '',
+      name: '', genericName: '', barcode: '', category: '', company: '', unit: '',
       cost: '', markup: '', price: '', reorderLevel: '', description: '', quantity: ''
     });
     setShowAddModal(true);
@@ -137,6 +143,7 @@ const StockPage = () => {
       genericName: item.generic_name || '',
       barcode: item.barcode || '',
       category: item.category || '',
+      company: item.company || '',
       unit: item.unit || '',
       cost: cost || '',
       markup: markup || '',
@@ -152,7 +159,7 @@ const StockPage = () => {
     setShowAddModal(false);
     setItemOnEdit(null);
     setFormData({
-      name: '', genericName: '', barcode: '', category: '', unit: '',
+      name: '', genericName: '', barcode: '', category: '', company: '', unit: '',
       cost: '', markup: '', price: '', reorderLevel: '', description: '', quantity: ''
     });
   };
@@ -330,8 +337,8 @@ const StockPage = () => {
                     <td className="px-6 py-4 font-medium text-right text-gray-700">
                       {item.total_quantity_in_stock} <span className="text-gray-400 text-xs">{item.unit}</span>
                     </td>
-                    <td className="px-6 py-4 text-right text-gray-600">₦{item.last_cost_price}</td>
-                    <td className="px-6 py-4 text-right font-medium text-indigo-600">₦{item.unit_selling_price}</td>
+                    <td className="px-6 py-4 text-right text-gray-600">₦{formatMoney(item.last_cost_price)}</td>
+                    <td className="px-6 py-4 text-right font-medium text-indigo-600">₦{formatMoney(item.unit_selling_price)}</td>
                     <td className="px-6 py-4 text-center">
                       {item.total_quantity_in_stock <= item.reorder_level ? (
                         <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-xs font-medium border border-red-100">
@@ -380,6 +387,7 @@ const StockPage = () => {
         setFormData={setFormData}
         categories={categories}
         units={units}
+        companies={companies}
         handlePricingChange={handlePricingChange}
         handleSubmit={handleSubmit}
         onDeleteClick={confirmDelete}

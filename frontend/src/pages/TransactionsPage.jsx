@@ -17,6 +17,10 @@ const TransactionsPage = () => {
   const [error, setError] = useState('');
   const [searched, setSearched] = useState(false);
 
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const fetchTransactions = async (paramsToUse) => {
     setLoading(true);
     setError('');
@@ -26,9 +30,12 @@ const TransactionsPage = () => {
       const res = await axios.post('/api/searchTransactions', paramsToUse);
       if (res.data.success) {
         setResults(res.data.contents || []);
+        const totalRev = parseFloat(res.data.totalSalesRevenue) || 0;
+        const totalDisc = parseFloat(res.data.totalDiscount) || 0;
         setTotals({
-          salesRevenue: res.data.totalSalesRevenue || '0.00',
-          discount: res.data.totalDiscount || '0.00',
+          totalRevenue: totalRev.toFixed(2),
+          discount: totalDisc.toFixed(2),
+          salesRevenue: (totalRev - totalDisc).toFixed(2),
           payRouteTotals: res.data.payRouteTotals || {}
         });
       } else {
@@ -233,8 +240,8 @@ const TransactionsPage = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right font-medium text-gray-700">{row.quantity_change}</td>
-                  <td className="px-6 py-4 text-right text-gray-600">₦{row.selling_price_per_unit || row.unit_selling_price || 0}</td>
-                  <td className="px-6 py-4 text-right font-medium text-indigo-600">₦{row.gross_revenue_impact || 0}</td>
+                  <td className="px-6 py-4 text-right text-gray-600">₦{formatMoney(row.selling_price_per_unit || row.unit_selling_price)}</td>
+                  <td className="px-6 py-4 text-right font-medium text-indigo-600">₦{formatMoney(row.gross_revenue_impact)}</td>
                   <td className="px-6 py-4 text-gray-600 flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-[10px]">
                       {(row.transacted_by || row.username || 'U').substring(0, 2).toUpperCase()}
@@ -257,7 +264,7 @@ const TransactionsPage = () => {
           <div className="bg-gray-50 p-6 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1 relative group cursor-help">
               <p className="text-sm text-gray-500 font-medium">Total Sales Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">₦{totals.salesRevenue}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{formatMoney(totals.salesRevenue)}</p>
 
               {totals.payRouteTotals && Object.keys(totals.payRouteTotals).length > 0 && (
                 <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 shadow-xl rounded-lg p-3 hidden group-hover:block z-10 transition-all opacity-0 group-hover:opacity-100">
@@ -266,7 +273,7 @@ const TransactionsPage = () => {
                     {Object.entries(totals.payRouteTotals).map(([route, amount]) => (
                       <div key={route} className="flex justify-between items-center text-sm">
                         <span className="text-gray-600 capitalize">{route}</span>
-                        <span className="font-semibold text-gray-900">₦{amount}</span>
+                        <span className="font-semibold text-gray-900">₦{formatMoney(amount)}</span>
                       </div>
                     ))}
                   </div>
@@ -275,7 +282,7 @@ const TransactionsPage = () => {
             </div>
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex-1">
               <p className="text-sm text-gray-500 font-medium">Total Discount Given</p>
-              <p className="text-2xl font-bold text-gray-900">₦{totals.discount}</p>
+              <p className="text-2xl font-bold text-gray-900">₦{formatMoney(totals.discount)}</p>
             </div>
           </div>
         )}

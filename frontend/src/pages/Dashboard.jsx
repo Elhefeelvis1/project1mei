@@ -18,6 +18,10 @@ const Dashboard = () => {
   const [shopDetails, setShopDetails] = useState({ shopName: '', shopAddress: '', shopPhone: '', shopEmail: '', shopLogo: '' });
   const [saving, setSaving] = useState(false);
 
+  const formatMoney = (amount) => {
+    return Number(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   useEffect(() => {
     if (activeTab === 'shopInfo') {
       axios.get('/api/shopDetails').then(res => setShopDetails(res.data)).catch(console.error);
@@ -76,7 +80,7 @@ const Dashboard = () => {
     { title: 'Total Sales', value: data.recentSales.length, icon: <TrendingUp size={24} className="text-emerald-500" />, bg: 'bg-emerald-50' },
     { title: 'Registered Users', value: data.users.length, icon: <Users size={24} className="text-blue-500" />, bg: 'bg-blue-50' },
     { title: 'Registered Customers', value: data.totalCustomers || 0, icon: <Users size={24} className="text-amber-500" />, bg: 'bg-amber-50' },
-    { title: 'Stock Value', value: `₦${Number(data.totalStockValue || 0).toLocaleString()}`, icon: <DollarSign size={24} className="text-indigo-500" />, bg: 'bg-indigo-50' },
+    { title: 'Stock Value', value: `₦${formatMoney(data.totalStockValue)}`, icon: <DollarSign size={24} className="text-indigo-500" />, bg: 'bg-indigo-50' },
   ];
 
   return (
@@ -132,7 +136,7 @@ const Dashboard = () => {
                       <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{sale.name}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{Math.abs(sale.quantity_change)}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">₦{sale.unit_selling_price}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">₦{formatMoney(sale.unit_selling_price)}</td>
                       </tr>
                     )) : (
                       <tr>
